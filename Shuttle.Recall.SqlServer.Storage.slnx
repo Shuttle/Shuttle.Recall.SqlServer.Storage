@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="Shuttle.Recall.SqlServer.Storage.Tests/Shuttle.Recall.SqlServer.Storage.Tests.csproj" />
+  <Project Path="Shuttle.Recall.SqlServer.Storage/Shuttle.Recall.SqlServer.Storage.csproj" />
+</Solution>
