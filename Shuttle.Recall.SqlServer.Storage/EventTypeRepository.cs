@@ -1,11 +1,13 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
-public class EventTypeRepository(IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IEventTypeRepository
+public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IEventTypeRepository
 {
+    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
     private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
     private readonly Dictionary<string, Guid> _cache = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -28,13 +30,21 @@ public class EventTypeRepository(IDbContextFactory<SqlServerStorageDbContext> db
 
                 await using var command = connection.CreateCommand();
 
-                command.CommandText = @"
-IF NOT EXISTS (SELECT 1 FROM EventTypes WHERE TypeName = @TypeName)
+                command.CommandText = @$"
+IF NOT EXISTS (SELECT 1 FROM [{_sqlServerStorageOptions.Schema}].[EventType] WHERE TypeName = @TypeName)
 BEGIN
-    INSERT INTO EventTypes (Id, TypeName) 
-    VALUES (@Id, @TypeName);
+    INSERT INTO [{_sqlServerStorageOptions.Schema}].[EventType] 
+    (
+        Id, 
+        TypeName
+    ) 
+    VALUES 
+    (
+        @Id, 
+        @TypeName
+    );
 END
-SELECT Id FROM EventTypes WHERE TypeName = @TypeName;
+SELECT Id FROM [{_sqlServerStorageOptions.Schema}].[EventType] WHERE TypeName = @TypeName;
 ";
 
                 command.Parameters.Add(new SqlParameter("@TypeName", typeName));

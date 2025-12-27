@@ -37,21 +37,21 @@ VALUES
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = '{key}'").FirstOrDefaultAsync(cancellationToken) > 0;
+        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken) > 0;
     }
 
     public async ValueTask<bool> ContainsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE Id = '{id}'").FirstOrDefaultAsync(cancellationToken) > 0;
+        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE Id = @Id", new SqlParameter("@Id", id)).FirstOrDefaultAsync(cancellationToken) > 0;
     }
 
     public async ValueTask<Guid?> FindAsync(string key, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
-        return await dbContext.Database.SqlQueryRaw<Guid?>($"SELECT Id [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = '{key}'").FirstOrDefaultAsync(cancellationToken);
+        return await dbContext.Database.SqlQueryRaw<Guid?>($"SELECT Id [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task RekeyAsync(string key, string rekey, CancellationToken cancellationToken = default)
