@@ -29,4 +29,17 @@ public class StorageFixture : RecallFixture
 
         await ExerciseStorageAsync(fixtureConfiguration);
     }
+
+
+    [Test]
+    public async Task Should_be_able_to_exercise_sequencer_async()
+    {
+        var services = SqlConfiguration.GetServiceCollection();
+
+        await ExercisePrimitiveEventSequencerAsync(new FixtureConfiguration(services)
+            .WithAddEventStore(builder =>
+            {
+                builder.Options.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+            }));
+    }
 }

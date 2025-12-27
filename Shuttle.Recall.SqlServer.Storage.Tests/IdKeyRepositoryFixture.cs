@@ -7,6 +7,7 @@ using NUnit.Framework;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
 
+
 public class IdKeyRepositoryFixture
 {
     public static readonly Guid Id = new("047FF6FB-FB57-4F63-8795-99F252EDA62F");

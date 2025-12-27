@@ -1,12 +1,13 @@
-﻿using System.Data;
-using Microsoft.Data.SqlClient;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
+using System.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
+[SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
 public class PrimitiveEventRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventRepository
 {
@@ -71,20 +72,6 @@ ORDER BY
         return result;
     }
 
-    public async ValueTask<long> GetMaxSequenceNumberAsync(CancellationToken cancellationToken = default)
-    {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        return await dbContext.Database.SqlQueryRaw<long>($"SELECT ISNULL(MAX(SequenceNumber), 0) [Value] FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]").FirstOrDefaultAsync(cancellationToken);
-    }
-
-    public async ValueTask<long> GetSequenceNumberAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        return await dbContext.Database.SqlQueryRaw<long>($"SELECT ISNULL(MAX(SequenceNumber), 0) [Value] FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WHERE EventId = @Id", new SqlParameter("@Id", id)).FirstOrDefaultAsync(cancellationToken);
-    }
-
     public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -92,10 +79,8 @@ ORDER BY
         await dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WHERE Id = @Id", [new SqlParameter("@Id", id)], cancellationToken);
     }
 
-    public async ValueTask<long> SaveAsync(IEnumerable<PrimitiveEvent> primitiveEvents, CancellationToken cancellationToken = default)
+    public async Task SaveAsync(IEnumerable<PrimitiveEvent> primitiveEvents, CancellationToken cancellationToken = default)
     {
-        long maxSequenceNumber = 0;
-
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
 
         foreach (var primitiveEvent in primitiveEvents)
@@ -138,13 +123,6 @@ VALUES
                 ],
                 cancellationToken
             );
-
-            if (primitiveEvent.SequenceNumber.HasValue && primitiveEvent.SequenceNumber > maxSequenceNumber)
-            {
-                maxSequenceNumber = primitiveEvent.SequenceNumber.Value;
-            }
         }
-
-        return maxSequenceNumber;
     }
 }

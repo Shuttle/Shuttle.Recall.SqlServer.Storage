@@ -29,6 +29,7 @@ public static class ServiceCollectionExtensions
                 options.ConnectionString = sqlServerStorageBuilder.Options.ConnectionString;
                 options.Schema = sqlServerStorageBuilder.Options.Schema;
                 options.CommandTimeout = sqlServerStorageBuilder.Options.CommandTimeout;
+                options.PrimitiveEventSequencerBatchSize = sqlServerStorageBuilder.Options.PrimitiveEventSequencerBatchSize < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerBatchSize;
             });
 
             services.AddDbContextFactory<SqlServerStorageDbContext>(dbContextFactoryBuilder =>

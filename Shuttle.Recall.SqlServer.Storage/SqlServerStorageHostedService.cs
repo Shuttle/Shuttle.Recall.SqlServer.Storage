@@ -2,9 +2,11 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
+[SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
 public class SqlServerStorageHostedService(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IHostedService
 {
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);

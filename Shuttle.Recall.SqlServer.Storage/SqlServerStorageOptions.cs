@@ -8,4 +8,5 @@ public class SqlServerStorageOptions
     public string Schema { get; set; } = "dbo";
     public bool ConfigureDatabase { get; set; } = true;
     public int CommandTimeout { get; set; } = 30;
+    public int PrimitiveEventSequencerBatchSize { get; set; } = 100;
 }
