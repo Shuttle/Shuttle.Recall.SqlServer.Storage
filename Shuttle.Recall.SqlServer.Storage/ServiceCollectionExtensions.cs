@@ -1,7 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 
@@ -18,6 +16,7 @@ public static class ServiceCollectionExtensions
             builder?.Invoke(sqlServerStorageBuilder);
 
             services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
+            services.AddSingleton<IPrimitiveEventQuery, PrimitiveEventQuery>();
             services.AddSingleton<IPrimitiveEventRepository, PrimitiveEventRepository>();
             services.AddSingleton<IEventTypeRepository, EventTypeRepository>();
             services.AddSingleton<IIdKeyRepository, IdKeyRepository>();
