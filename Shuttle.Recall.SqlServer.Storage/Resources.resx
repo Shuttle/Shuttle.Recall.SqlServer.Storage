@@ -120,10 +120,6 @@
   <data name="ConnectionStringOptionException" xml:space="preserve">
     <value>No 'SqlServerStorageOptions.ConnectionString' has been specified.</value>
   </data>
-  <data name="ConnectionStringNameException" xml:space="preserve">
-    <value>Could not find a connection string for '{0}'.</value>
-    <comment>0 = connection string name</comment>
-  </data>
   <data name="CountMustBeGreaterThanZero" xml:space="preserve">
     <value>Count must be greater than zero.</value>
   </data>

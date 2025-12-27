@@ -61,15 +61,6 @@ namespace Shuttle.Recall.SqlServer.Storage {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Could not find a connection string for &apos;{0}&apos;..
-        /// </summary>
-        public static string ConnectionStringNameException {
-            get {
-                return ResourceManager.GetString("ConnectionStringNameException", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to No &apos;SqlServerStorageOptions.ConnectionString&apos; has been specified..
         /// </summary>
         public static string ConnectionStringOptionException {
