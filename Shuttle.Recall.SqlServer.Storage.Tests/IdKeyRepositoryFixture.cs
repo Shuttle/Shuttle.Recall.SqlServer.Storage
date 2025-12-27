@@ -15,7 +15,7 @@ public class IdKeyRepositoryFixture
     [Test]
     public async Task Should_be_able_to_use_repository_async()
     {
-        var services = SqlConfiguration.GetServiceCollection();
+        var services = SqlServerFixtureConfiguration.GetServiceCollection();
 
         var serviceProvider = services.BuildServiceProvider();
 

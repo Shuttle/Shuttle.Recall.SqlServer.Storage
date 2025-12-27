@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NUnit.Framework;
@@ -7,13 +6,13 @@ using Shuttle.Core.Pipelines.Logging;
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
 
 [SetUpFixture]
-public class SqlConfiguration
+public class SqlServerFixtureConfiguration
 {
     public static IServiceCollection GetServiceCollection(IServiceCollection? serviceCollection = null)
     {
         var configuration = new ConfigurationBuilder()
             .AddJsonFile("appsettings.json")
-            .AddUserSecrets<SqlConfiguration>()
+            .AddUserSecrets<SqlServerFixtureConfiguration>()
             .Build();
 
         var services = (serviceCollection ?? new ServiceCollection())

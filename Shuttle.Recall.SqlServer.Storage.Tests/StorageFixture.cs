@@ -13,7 +13,7 @@ public class StorageFixture : RecallFixture
     [TestCase(false)]
     public async Task Should_be_able_to_exercise_event_store_async(bool isTransactional)
     {
-        var services = SqlConfiguration.GetServiceCollection();
+        var services = SqlServerFixtureConfiguration.GetServiceCollection();
 
         var fixtureConfiguration = new FixtureConfiguration(services)
             .WithStarting(async serviceProvider =>
@@ -38,7 +38,7 @@ public class StorageFixture : RecallFixture
     [TestCase(false)]
     public async Task Should_be_able_to_exercise_sequencer_async(bool isTransactional)
     {
-        var services = SqlConfiguration.GetServiceCollection();
+        var services = SqlServerFixtureConfiguration.GetServiceCollection();
 
         await ExercisePrimitiveEventSequencerAsync(new FixtureConfiguration(services)
             .WithAddEventStore(builder =>

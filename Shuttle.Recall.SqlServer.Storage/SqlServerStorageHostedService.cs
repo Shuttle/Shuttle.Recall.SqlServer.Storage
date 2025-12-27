@@ -27,8 +27,8 @@ public class SqlServerStorageHostedService(IOptions<SqlServerStorageOptions> sql
             try
             {
                 await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-                {
-                    await dbContext.Database.ExecuteSqlRawAsync($@"
+                
+                await dbContext.Database.ExecuteSqlRawAsync($@"
 DECLARE @lock_result INT;
 EXEC @lock_result = sp_getapplock @Resource = '{typeof(SqlServerStorageHostedService).FullName}', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 15000;
 
@@ -139,7 +139,6 @@ END CATCH
 
 EXEC sp_releaseapplock @Resource = '{typeof(SqlServerStorageHostedService).FullName}', @LockOwner = 'Session';
 ", cancellationToken: cancellationToken);
-                }
 
                 retry = false;
             }
