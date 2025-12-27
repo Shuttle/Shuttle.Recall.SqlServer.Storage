@@ -9,7 +9,9 @@ namespace Shuttle.Recall.SqlServer.Storage.Tests;
 public class StorageFixture : RecallFixture
 {
     [Test]
-    public async Task Should_be_able_to_exercise_event_store_async()
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Should_be_able_to_exercise_event_store_async(bool isTransactional)
     {
         var services = SqlConfiguration.GetServiceCollection();
 
@@ -27,12 +29,14 @@ public class StorageFixture : RecallFixture
 #pragma warning restore EF1002
             });
 
-        await ExerciseStorageAsync(fixtureConfiguration);
+        await ExerciseStorageAsync(fixtureConfiguration, isTransactional);
     }
 
 
     [Test]
-    public async Task Should_be_able_to_exercise_sequencer_async()
+    [TestCase(true)]
+    [TestCase(false)]
+    public async Task Should_be_able_to_exercise_sequencer_async(bool isTransactional)
     {
         var services = SqlConfiguration.GetServiceCollection();
 
@@ -40,6 +44,6 @@ public class StorageFixture : RecallFixture
             .WithAddEventStore(builder =>
             {
                 builder.Options.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
-            }));
+            }), isTransactional);
     }
 }
