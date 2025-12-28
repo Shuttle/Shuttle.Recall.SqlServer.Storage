@@ -88,18 +88,18 @@ BEGIN TRY
         END
         ELSE
         BEGIN
-            ALTER TABLE [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ALTER COLUMN [SequenceNumber] BIGINT NULL;
+            IF EXISTS (
+                SELECT 1 
+                FROM INFORMATION_SCHEMA.COLUMNS 
+                WHERE TABLE_SCHEMA = '{_sqlServerStorageOptions.Schema}'
+                  AND TABLE_NAME = 'PrimitiveEvent'
+                  AND COLUMN_NAME = 'SequenceNumber'
+                  AND IS_NULLABLE = 'NO'
+            )
+            BEGIN
+                ALTER TABLE [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]                 ALTER COLUMN [SequenceNumber] BIGINT NULL;
+            END
         END
-    END
-
-    IF EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PrimitiveEvent_DateCommitted_Filtered_Null' AND object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
-    BEGIN
-        DROP INDEX [IX_PrimitiveEvent_DateCommitted_Filtered_Null] ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent];
-    END
-
-    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]') AND name = 'DateCommitted')
-    BEGIN
-        ALTER TABLE [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] DROP COLUMN [DateCommitted];
     END
 
     IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[EventType]') AND name = N'IX_EventType')
@@ -107,9 +107,18 @@ BEGIN TRY
         CREATE UNIQUE NONCLUSTERED INDEX [IX_EventType] ON [{_sqlServerStorageOptions.Schema}].[EventType] ([TypeName] ASC);
     END
 
-    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PrimitiveEvent_SequenceNumber_DateRegistered' AND object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
+    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PrimitiveEvent_SequenceNumber' AND object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
     BEGIN
-        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_SequenceNumber_DateRegistered] ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ([SequenceNumber] ASC, [DateRegistered] ASC);
+        CREATE UNIQUE NONCLUSTERED INDEX [IX_PrimitiveEvent_SequenceNumber] 
+        ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ([SequenceNumber] ASC, [DateRegistered] ASC)
+        WHERE [SequenceNumber] IS NOT NULL;
+    END
+
+    IF NOT EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PrimitiveEvent_NullSequence_DateRegistered_Version' AND object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
+    BEGIN
+        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_NullSequence_DateRegistered_Version] 
+        ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ([DateRegistered] ASC, [Version] ASC)
+        WHERE [SequenceNumber] IS NULL;
     END
 
     IF NOT EXISTS (SELECT * FROM sys.indexes WHERE object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]') AND name = N'IX_PrimitiveEvent_EventTypeId')
@@ -130,6 +139,17 @@ BEGIN TRY
     IF EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[FK_PrimitiveEvent_EventType_EventTypeId]') AND parent_object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
     BEGIN
         ALTER TABLE [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] CHECK CONSTRAINT [FK_PrimitiveEvent_EventType_EventTypeId]
+    END
+
+    /* DROP */
+    IF EXISTS (SELECT * FROM sys.indexes WHERE name = N'IX_PrimitiveEvent_DateCommitted_Filtered_Null' AND object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]'))
+    BEGIN
+        DROP INDEX [IX_PrimitiveEvent_DateCommitted_Filtered_Null] ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent];
+    END
+
+    IF EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID(N'[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]') AND name = 'DateCommitted')
+    BEGIN
+        ALTER TABLE [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] DROP COLUMN [DateCommitted];
     END
 END TRY
 BEGIN CATCH
