@@ -15,8 +15,7 @@ public class PrimitiveEventSequencer(IOptions<SqlServerStorageOptions> sqlServer
     public async ValueTask<bool> SequenceAsync(CancellationToken cancellationToken = default)
     {
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        await using var transaction =
-            await dbContext.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, cancellationToken);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
         var rowsAffected = await dbContext.Database.ExecuteSqlRawAsync($@"
 DECLARE @lock_result INT;
@@ -39,18 +38,18 @@ BEGIN TRY
         SELECT TOP ({_sqlServerStorageOptions.PrimitiveEventSequencerBatchSize})
             [Id],
             [Version],
-            ROW_NUMBER() OVER (ORDER BY DateRegistered) AS rn
+            ROW_NUMBER() OVER (ORDER BY [DateRegistered], [Version]) AS rn
         FROM 
             [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WITH (UPDLOCK, ROWLOCK)
         WHERE 
-            SequenceNumber IS NULL
+            [SequenceNumber] IS NULL
         ORDER BY 
-            DateRegistered
+            [DateRegistered], [Version]
     )
     UPDATE 
         pe
     SET 
-        SequenceNumber = @MaxSequenceNumber + b.rn
+        [SequenceNumber] = @MaxSequenceNumber + b.rn
     FROM 
         [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] pe
     INNER JOIN 
