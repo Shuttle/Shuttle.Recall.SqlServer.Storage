@@ -11,7 +11,6 @@ public class SqlServerFixtureConfiguration
     public static IServiceCollection GetServiceCollection(IServiceCollection? serviceCollection = null)
     {
         var configuration = new ConfigurationBuilder()
-            .AddJsonFile("appsettings.json")
             .AddUserSecrets<SqlServerFixtureConfiguration>()
             .Build();
 
@@ -19,12 +18,10 @@ public class SqlServerFixtureConfiguration
             .AddSingleton<IConfiguration>(configuration)
             .AddSqlServerEventStorage(builder =>
             {
-                configuration.GetSection(SqlServerStorageOptions.SectionName).Bind(builder.Options);
-
                 builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
                 builder.Options.Schema = "RecallFixture";
             })
-            .AddPipelineLogging(); ;
+            .AddPipelineLogging();
 
         return services;
     }

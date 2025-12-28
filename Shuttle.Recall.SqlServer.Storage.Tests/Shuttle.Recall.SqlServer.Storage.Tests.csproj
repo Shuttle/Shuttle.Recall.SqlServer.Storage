@@ -19,10 +19,4 @@
     <ProjectReference Include="..\Shuttle.Recall.SqlServer.Storage\Shuttle.Recall.SqlServer.Storage.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <None Update="appsettings.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-  </ItemGroup>
-
 </Project>
