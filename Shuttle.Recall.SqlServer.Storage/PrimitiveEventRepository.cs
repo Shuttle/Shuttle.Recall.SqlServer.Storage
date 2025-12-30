@@ -87,7 +87,6 @@ ORDER BY
         {
             var eventTypeId = await _eventTypeRepository.GetIdAsync(primitiveEvent.EventType, cancellationToken).ConfigureAwait(false);
 
-
             await dbContext.Database.ExecuteSqlRawAsync(@$"
 INSERT INTO [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] 
 (

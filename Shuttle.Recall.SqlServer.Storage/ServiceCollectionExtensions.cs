@@ -1,17 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Shuttle.Core.Contract;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
-public static class ServiceCollectionExtensions
+public static class RecallBuilderExtensions
 {
-    extension(IServiceCollection services)
+    extension(RecallBuilder recallBuilder)
     {
-        public IServiceCollection AddSqlServerEventStorage(Action<SqlServerStorageBuilder>? builder = null)
+        public RecallBuilder UseSqlServerEventStorage(Action<SqlServerStorageBuilder>? builder = null)
         {
-            var sqlServerStorageBuilder = new SqlServerStorageBuilder(Guard.AgainstNull(services));
+            var services = recallBuilder.Services;
+            var sqlServerStorageBuilder = new SqlServerStorageBuilder(services);
 
             builder?.Invoke(sqlServerStorageBuilder);
 
@@ -21,7 +23,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<IEventTypeRepository, EventTypeRepository>();
             services.AddSingleton<IIdKeyRepository, IdKeyRepository>();
             services.AddSingleton<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
-            services.AddHostedService<SqlServerStorageHostedService>();
+            recallBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
 
             services.AddOptions<SqlServerStorageOptions>().Configure(options =>
             {
@@ -39,7 +41,7 @@ public static class ServiceCollectionExtensions
                 });
             });
 
-            return services;
+            return recallBuilder;
         }
     }
 }

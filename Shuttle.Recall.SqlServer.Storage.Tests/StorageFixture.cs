@@ -41,9 +41,9 @@ public class StorageFixture : RecallFixture
         var services = SqlServerFixtureConfiguration.GetServiceCollection();
 
         await ExercisePrimitiveEventSequencerAsync(new FixtureConfiguration(services)
-            .WithAddEventStore(builder =>
+            .WithAddRecall(builder =>
             {
-                builder.Options.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+                builder.Options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
             }), isTransactional);
     }
 }
