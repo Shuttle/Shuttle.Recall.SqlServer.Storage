@@ -65,6 +65,11 @@ AND
         : $"AND Id IN ({string.Join(",", specification.Ids.Select(id => string.Concat("'", id, "'")).ToArray())})"
 )}
 {(
+    !specification.HasVersions
+        ? string.Empty
+        : $"AND [Version] IN ({string.Join(",", specification.Versions).ToArray()})"
+)}
+{(
     !specification.HasSequenceNumbers
         ? string.Empty
         : $"AND SequenceNumber IN ({string.Join(",", specification.SequenceNumbers)})"
