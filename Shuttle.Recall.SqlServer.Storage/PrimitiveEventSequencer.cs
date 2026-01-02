@@ -29,7 +29,7 @@ IF @lock_result < 0
 
 BEGIN TRY
     SELECT 
-        @MaxSequenceNumber = ISNULL(MAX(SequenceNumber), 0)
+        @MaxSequenceNumber = MAX(SequenceNumber)
     FROM 
         [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent];
 
