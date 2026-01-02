@@ -17,13 +17,13 @@ public static class RecallBuilderExtensions
 
             builder?.Invoke(sqlServerStorageBuilder);
 
-            services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
-            services.AddSingleton<IPrimitiveEventQuery, PrimitiveEventQuery>();
-            services.AddSingleton<IPrimitiveEventRepository, PrimitiveEventRepository>();
-            services.AddSingleton<IEventTypeRepository, EventTypeRepository>();
-            services.AddSingleton<IIdKeyRepository, IdKeyRepository>();
-            services.AddSingleton<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
-            recallBuilder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
+            services.TryAddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
+            services.TryAddSingleton<IPrimitiveEventQuery, PrimitiveEventQuery>();
+            services.TryAddSingleton<IPrimitiveEventRepository, PrimitiveEventRepository>();
+            services.TryAddSingleton<IEventTypeRepository, EventTypeRepository>();
+            services.TryAddSingleton<IIdKeyRepository, IdKeyRepository>();
+            services.TryAddSingleton<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
 
             services.AddOptions<SqlServerStorageOptions>().Configure(options =>
             {
