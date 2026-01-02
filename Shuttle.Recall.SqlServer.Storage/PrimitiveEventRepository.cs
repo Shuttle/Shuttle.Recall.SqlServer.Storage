@@ -63,7 +63,7 @@ ORDER BY
                 EventId = reader.GetGuid(2),
                 EventEnvelope = (byte[])reader[3],
                 SequenceNumber = reader.IsDBNull(4) ? null : reader.GetInt64(4),
-                DateRegistered = reader.GetDateTime(5),
+                RecordedAt = reader.GetFieldValue<DateTimeOffset>(5),
                 CorrelationId = reader.IsDBNull(6) ? null : reader.GetGuid(6),
                 EventType = reader.GetString(7)
             });
@@ -96,7 +96,7 @@ INSERT INTO [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]
     EventId, 
     EventTypeId, 
     SequenceNumber, 
-    DateRegistered, 
+    RecordedAt, 
     CorrelationId
 )
 VALUES 
@@ -107,7 +107,7 @@ VALUES
     @EventId, 
     @EventTypeId, 
     @SequenceNumber, 
-    @DateRegistered, 
+    @RecordedAt, 
     @CorrelationId
 )",
                 [
@@ -117,7 +117,7 @@ VALUES
                     new SqlParameter("@EventId", primitiveEvent.EventId),
                     new SqlParameter("@EventTypeId", eventTypeId),
                     new SqlParameter("@SequenceNumber", (object?)primitiveEvent.SequenceNumber ?? DBNull.Value),
-                    new SqlParameter("@DateRegistered", primitiveEvent.DateRegistered),
+                    new SqlParameter("@RecordedAt", primitiveEvent.RecordedAt),
                     new SqlParameter("@CorrelationId", (object?)primitiveEvent.CorrelationId ?? DBNull.Value)
                 ],
                 cancellationToken

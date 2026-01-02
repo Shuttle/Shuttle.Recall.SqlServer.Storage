@@ -35,7 +35,7 @@ SELECT {(specification.MaximumRows > 0 ? $"TOP {specification.MaximumRows}" : st
 	es.[EventId],
 	es.[EventEnvelope],
 	es.[SequenceNumber],
-	es.[DateRegistered],
+	es.[RecordedAt],
 	es.[CorrelationId],
 	et.[TypeName] EventType
 FROM 
@@ -94,7 +94,7 @@ ORDER BY
                 EventId = reader.GetGuid(2),
                 EventEnvelope = (byte[])reader[3],
                 SequenceNumber = reader.IsDBNull(4) ? null : reader.GetInt64(4),
-                DateRegistered = reader.GetDateTime(5),
+                RecordedAt = reader.GetFieldValue<DateTimeOffset>(5),
                 CorrelationId = reader.IsDBNull(6) ? null : reader.GetGuid(6),
                 EventType = reader.GetString(7)
             });
