@@ -21,7 +21,7 @@ public class SqlServerFixtureConfiguration
                 recallBuilder.UseSqlServerEventStorage(builder =>
                 {
                     builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
-                    builder.Options.Schema = "RecallFixture";
+                    builder.Options.Schema = "recall_fixture";
                 });
             })
             .AddPipelineLogging();
