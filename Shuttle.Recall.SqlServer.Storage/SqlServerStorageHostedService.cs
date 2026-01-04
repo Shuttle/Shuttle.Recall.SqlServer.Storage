@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 using System.Diagnostics.CodeAnalysis;
+using Shuttle.Core.Reflection;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
@@ -180,10 +181,11 @@ EXEC sp_releaseapplock @Resource = '{typeof(SqlServerStorageHostedService).FullN
 
                 retry = false;
             }
-            catch
+            catch(Exception ex)
             {
                 retryCount++;
-                if (retryCount > 3)
+
+                if (retryCount > 3 || ex.AllMessages().Contains("Database schema is outdated"))
                 {
                     throw;
                 }
