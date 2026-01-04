@@ -96,7 +96,7 @@ BEGIN TRY
             ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ([SequenceNumber] ASC, [RecordedAt] ASC)
             WHERE [SequenceNumber] IS NOT NULL;
 
-        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_NullSequence_DateRegistered_Version] 
+        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_NullSequence_RecordedAt_Version] 
             ON [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] ([RecordedAt] ASC, [Version] ASC)
             WHERE [SequenceNumber] IS NULL;
     END

@@ -38,13 +38,13 @@ BEGIN TRY
         SELECT TOP ({_sqlServerStorageOptions.PrimitiveEventSequencerBatchSize})
             [Id],
             [Version],
-            ROW_NUMBER() OVER (ORDER BY [DateRegistered], [Version]) AS rn
+            ROW_NUMBER() OVER (ORDER BY [RecordedAt], [Version]) AS rn
         FROM 
             [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WITH (UPDLOCK, ROWLOCK)
         WHERE 
             [SequenceNumber] IS NULL
         ORDER BY 
-            [DateRegistered], [Version]
+            [RecordedAt], [Version]
     )
     UPDATE 
         pe

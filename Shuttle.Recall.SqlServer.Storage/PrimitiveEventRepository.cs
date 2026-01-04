@@ -30,7 +30,7 @@ SELECT
     pe.EventId, 
     pe.EventEnvelope, 
     pe.SequenceNumber, 
-    pe.DateRegistered, 
+    pe.RecordedAt, 
     pe.CorrelationId, 
     et.TypeName
 FROM 
