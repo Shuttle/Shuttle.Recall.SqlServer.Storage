@@ -6,11 +6,9 @@
     <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-  </PropertyGroup>
-
-  <PropertyGroup>
     <PublishSingleFile>true</PublishSingleFile>
-    <InvariantGlobalization>true</InvariantGlobalization>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <UserSecretsId>9bf9170a-ca29-4e9e-909b-fcd3a5f6db6e</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
