@@ -100,17 +100,25 @@ public class UpgradePrimitiveEventService(ILogger logger, string connectionStrin
         {
             await connection.OpenAsync();
 
-            var transaction = await connection.BeginTransactionAsync();
+            var transaction = (SqlTransaction)await connection.BeginTransactionAsync();
 
-            await CompletedDatabaseConfigurationAsync(connection);
-
-            await transaction.CommitAsync();
+            try
+            {
+                await CompletedDatabaseConfigurationAsync(connection, transaction);
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
     }
 
-    private async Task CompletedDatabaseConfigurationAsync(SqlConnection connection)
+    private async Task CompletedDatabaseConfigurationAsync(SqlConnection connection, SqlTransaction transaction)
     {
         var command = connection.CreateCommand();
+        command.Transaction = transaction;
 
         command.CommandText = $@"
 DECLARE @lock_result INT;
@@ -126,31 +134,73 @@ BEGIN TRY
     IF EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[{_schemaUpgrade}].[PrimitiveEvent]') AND type in (N'U')) AND
         EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') AND type in (N'U'))
     BEGIN
-        DROP TABLE [{_schema}].[PrimitiveEvent]
-        ALTER SCHEMA [{_schemaUpgrade}] TRANSFER [{_schema}].[PrimitiveEvent];
+        DROP TABLE [{_schema}].[PrimitiveEvent];
+        ALTER SCHEMA [{_schema}] TRANSFER [{_schemaUpgrade}].[PrimitiveEvent];
         DROP SCHEMA [{_schemaUpgrade}]
     END
 
-    ALTER TABLE [{_schema}].[PrimitiveEvent]
-        ADD CONSTRAINT [DF_PrimitiveEvent_RecordedAt] DEFAULT (SYSUTCDATETIME()) FOR [RecordedAt];
+    IF NOT EXISTS (
+        SELECT * FROM sys.default_constraints 
+        WHERE parent_object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'DF_PrimitiveEvent_RecordedAt'
+    )
+    BEGIN
+        ALTER TABLE [{_schema}].[PrimitiveEvent]
+            ADD CONSTRAINT [DF_PrimitiveEvent_RecordedAt] DEFAULT (SYSUTCDATETIME()) FOR [RecordedAt];
+    END
 
-    ALTER TABLE [{_schema}].[PrimitiveEvent] 
-        WITH CHECK ADD CONSTRAINT [FK_PrimitiveEvent_EventType_EventTypeId] 
-        FOREIGN KEY([EventTypeId]) REFERENCES [{_schema}].[EventType] ([Id]) ON DELETE CASCADE;
+    IF NOT EXISTS (
+        SELECT * FROM sys.foreign_keys 
+        WHERE parent_object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'FK_PrimitiveEvent_EventType_EventTypeId'
+    )
+    BEGIN
+        ALTER TABLE [{_schema}].[PrimitiveEvent] 
+            WITH CHECK ADD CONSTRAINT [FK_PrimitiveEvent_EventType_EventTypeId] 
+            FOREIGN KEY([EventTypeId]) REFERENCES [{_schema}].[EventType] ([Id]) ON DELETE CASCADE;
+    END
 
-    ALTER TABLE [{_schema}].[PrimitiveEvent] 
-        CHECK CONSTRAINT [FK_PrimitiveEvent_EventType_EventTypeId];
+    IF EXISTS (
+        SELECT * FROM sys.foreign_keys 
+        WHERE parent_object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'FK_PrimitiveEvent_EventType_EventTypeId'
+    )
+    BEGIN
+        ALTER TABLE [{_schema}].[PrimitiveEvent] 
+            CHECK CONSTRAINT [FK_PrimitiveEvent_EventType_EventTypeId];
+    END
 
-    CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_EventTypeId] 
-        ON [{_schema}].[PrimitiveEvent] ([EventTypeId] ASC);
+    IF NOT EXISTS (
+        SELECT * FROM sys.indexes 
+        WHERE object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'IX_PrimitiveEvent_EventTypeId'
+    )
+    BEGIN
+        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_EventTypeId] 
+            ON [{_schema}].[PrimitiveEvent] ([EventTypeId] ASC);
+    END
 
-    CREATE UNIQUE NONCLUSTERED INDEX [IX_PrimitiveEvent_SequenceNumber] 
-        ON [{_schema}].[PrimitiveEvent] ([SequenceNumber] ASC, [RecordedAt] ASC)
-        WHERE [SequenceNumber] IS NOT NULL;
+    IF NOT EXISTS (
+        SELECT * FROM sys.indexes 
+        WHERE object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'IX_PrimitiveEvent_SequenceNumber'
+    )
+    BEGIN
+        CREATE UNIQUE NONCLUSTERED INDEX [IX_PrimitiveEvent_SequenceNumber] 
+            ON [{_schema}].[PrimitiveEvent] ([SequenceNumber] ASC, [RecordedAt] ASC)
+            WHERE [SequenceNumber] IS NOT NULL;
+    END
 
-    CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_NullSequence_DateRegistered_Version] 
-        ON [{_schema}].[PrimitiveEvent] ([RecordedAt] ASC, [Version] ASC)
-        WHERE [SequenceNumber] IS NULL;
+    IF NOT EXISTS (
+        SELECT * FROM sys.indexes 
+        WHERE object_id = OBJECT_ID(N'[{_schema}].[PrimitiveEvent]') 
+        AND name = N'IX_PrimitiveEvent_NullSequence_DateRegistered_Version'
+    )
+    BEGIN
+        CREATE NONCLUSTERED INDEX [IX_PrimitiveEvent_NullSequence_DateRegistered_Version] 
+            ON [{_schema}].[PrimitiveEvent] ([RecordedAt] ASC, [Version] ASC)
+            WHERE [SequenceNumber] IS NULL;
+    END
 END TRY
 BEGIN CATCH
     EXEC sp_releaseapplock @Resource = '{typeof(UpgradePrimitiveEventService).FullName}', @LockOwner = 'Session';
