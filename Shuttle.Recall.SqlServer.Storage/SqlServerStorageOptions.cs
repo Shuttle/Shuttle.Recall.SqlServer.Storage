@@ -2,7 +2,7 @@ namespace Shuttle.Recall.SqlServer.Storage;
 
 public class SqlServerStorageOptions
 {
-    public const string SectionName = "Shuttle:EventStore:SqlServer:Storage";
+    public const string SectionName = "Shuttle:Recall:SqlServer:Storage";
 
     public string ConnectionString { get; set; } = string.Empty;
     public string Schema { get; set; } = "dbo";
