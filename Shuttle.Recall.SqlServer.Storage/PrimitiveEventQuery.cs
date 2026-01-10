@@ -6,11 +6,11 @@ using Microsoft.Data.SqlClient;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
-public class PrimitiveEventQuery(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory, IEventTypeRepository eventTypeRepository)
+public class PrimitiveEventQuery(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventQuery
 {
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-    private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
+    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
     private readonly IEventTypeRepository _eventTypeRepository = Guard.AgainstNull(eventTypeRepository);
 
     public async Task<IEnumerable<PrimitiveEvent>> SearchAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
@@ -22,9 +22,7 @@ public class PrimitiveEventQuery(IOptions<SqlServerStorageOptions> sqlServerStor
             eventTypeIds.Add(await _eventTypeRepository.GetIdAsync(eventType, cancellationToken));
         }
 
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        var connection = dbContext.Database.GetDbConnection();
+        var connection = _dbContext.Database.GetDbConnection();
 
         await using var command = connection.CreateCommand();
 

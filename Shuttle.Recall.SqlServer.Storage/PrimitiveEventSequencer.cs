@@ -7,13 +7,16 @@ using System.Diagnostics.CodeAnalysis;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class PrimitiveEventSequencer(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IPrimitiveEventSequencer
+public class PrimitiveEventSequencer(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IPrimitiveEventSequencer
 {
+    private readonly RecallOptions _recallOptions = Guard.AgainstNull(Guard.AgainstNull(recallOptions).Value);
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
     private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
 
     public async ValueTask<bool> SequenceAsync(CancellationToken cancellationToken = default)
     {
+        await _recallOptions.Operation.InvokeAsync(new("[PrimitiveEventSequencer/Starting]"), cancellationToken);
+
         await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
         await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -35,7 +38,7 @@ BEGIN TRY
 
     ;WITH Batch AS
     (
-        SELECT TOP ({_sqlServerStorageOptions.PrimitiveEventSequencerBatchSize})
+        SELECT TOP ({_sqlServerStorageOptions.PrimitiveEventSequencerLimit})
             [Id],
             [Version],
             ROW_NUMBER() OVER (ORDER BY [RecordedAt], [Version]) AS rn
@@ -68,6 +71,8 @@ SELECT @RowsAffected;
 ", cancellationToken);
 
         await transaction.CommitAsync(cancellationToken);
+
+        await _recallOptions.Operation.InvokeAsync(new($"[PrimitiveEventSequencer/Completed] : rows affected = {rowsAffected}"), cancellationToken);
 
         return rowsAffected > 0;
     }

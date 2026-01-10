@@ -7,6 +7,6 @@ public class SqlServerStorageOptions
     public string ConnectionString { get; set; } = string.Empty;
     public string Schema { get; set; } = "dbo";
     public bool ConfigureDatabase { get; set; } = true;
-    public int CommandTimeout { get; set; } = 30;
-    public int PrimitiveEventSequencerBatchSize { get; set; } = 100;
+    public TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(30);
+    public int PrimitiveEventSequencerLimit { get; set; } = 100;
 }

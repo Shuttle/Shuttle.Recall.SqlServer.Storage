@@ -1,12 +1,13 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
+using Shuttle.Core.Pipelines.Logging;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
-
 
 public class IdKeyRepositoryFixture
 {
@@ -15,7 +16,21 @@ public class IdKeyRepositoryFixture
     [Test]
     public async Task Should_be_able_to_use_repository_async()
     {
-        var services = SqlServerFixtureConfiguration.GetServiceCollection();
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<StorageFixture>()
+            .Build();
+
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddPipelineLogging()
+            .AddRecall(recallBuilder =>
+            {
+                recallBuilder.UseSqlServerEventStorage(builder =>
+                {
+                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                    builder.Options.Schema = "recall_fixture";
+                });
+            });
 
         var serviceProvider = services.BuildServiceProvider();
 

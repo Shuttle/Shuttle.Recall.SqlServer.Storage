@@ -8,18 +8,16 @@ using System.Diagnostics.CodeAnalysis;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class PrimitiveEventRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory, IEventTypeRepository eventTypeRepository)
+public class PrimitiveEventRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventRepository
 {
-    private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
+    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
     private readonly IEventTypeRepository _eventTypeRepository = Guard.AgainstNull(eventTypeRepository);
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
 
     public async Task<IEnumerable<PrimitiveEvent>> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        var connection = dbContext.Database.GetDbConnection();
+        var connection = _dbContext.Database.GetDbConnection();
 
         await using var command = connection.CreateCommand();
 
@@ -74,20 +72,16 @@ ORDER BY
 
     public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-        await dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WHERE Id = @Id", [new SqlParameter("@Id", id)], cancellationToken);
+        await _dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WHERE Id = @Id", [new SqlParameter("@Id", id)], cancellationToken);
     }
 
     public async Task SaveAsync(IEnumerable<PrimitiveEvent> primitiveEvents, CancellationToken cancellationToken = default)
     {
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
         foreach (var primitiveEvent in primitiveEvents)
         {
             var eventTypeId = await _eventTypeRepository.GetIdAsync(primitiveEvent.EventType, cancellationToken).ConfigureAwait(false);
 
-            await dbContext.Database.ExecuteSqlRawAsync(@$"
+            await _dbContext.Database.ExecuteSqlRawAsync(@$"
 INSERT INTO [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] 
 (
     Id, 

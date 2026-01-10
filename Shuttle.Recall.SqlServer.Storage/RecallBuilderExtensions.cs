@@ -19,9 +19,9 @@ public static class RecallBuilderExtensions
 
             services.TryAddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
             services.TryAddSingleton<IPrimitiveEventQuery, PrimitiveEventQuery>();
-            services.TryAddSingleton<IPrimitiveEventRepository, PrimitiveEventRepository>();
-            services.TryAddSingleton<IEventTypeRepository, EventTypeRepository>();
-            services.TryAddSingleton<IIdKeyRepository, IdKeyRepository>();
+            services.TryAddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
+            services.TryAddScoped<IEventTypeRepository, EventTypeRepository>();
+            services.TryAddScoped<IIdKeyRepository, IdKeyRepository>();
             services.TryAddSingleton<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
 
@@ -30,14 +30,14 @@ public static class RecallBuilderExtensions
                 options.ConnectionString = sqlServerStorageBuilder.Options.ConnectionString;
                 options.Schema = sqlServerStorageBuilder.Options.Schema;
                 options.CommandTimeout = sqlServerStorageBuilder.Options.CommandTimeout;
-                options.PrimitiveEventSequencerBatchSize = sqlServerStorageBuilder.Options.PrimitiveEventSequencerBatchSize < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerBatchSize;
+                options.PrimitiveEventSequencerLimit = sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit;
             });
 
             services.AddDbContextFactory<SqlServerStorageDbContext>(dbContextFactoryBuilder =>
             {
                 dbContextFactoryBuilder.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, sqlServerOptions =>
                 {
-                    sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout);
+                    sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
                 });
             });
 

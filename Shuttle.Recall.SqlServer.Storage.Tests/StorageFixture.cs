@@ -1,7 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
+using Shuttle.Core.Pipelines.Logging;
 using Shuttle.Recall.Testing;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
@@ -13,9 +15,23 @@ public class StorageFixture : RecallFixture
     [TestCase(false)]
     public async Task Should_be_able_to_exercise_event_store_async(bool isTransactional)
     {
-        var services = SqlServerFixtureConfiguration.GetServiceCollection();
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<StorageFixture>()
+            .Build();
 
-        var fixtureConfiguration = new FixtureConfiguration(services)
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddPipelineLogging();
+
+        var fixtureOptions = new RecallFixtureOptions(services)
+            .WithAddRecall(recallBuilder =>
+            {
+                recallBuilder.UseSqlServerEventStorage(builder =>
+                {
+                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                    builder.Options.Schema = "recall_fixture";
+                });
+            })
             .WithStarting(async serviceProvider =>
             {
                 var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<SqlServerStorageDbContext>>();
@@ -29,7 +45,7 @@ public class StorageFixture : RecallFixture
 #pragma warning restore EF1002
             });
 
-        await ExerciseStorageAsync(fixtureConfiguration, isTransactional);
+        await ExerciseStorageAsync(fixtureOptions, isTransactional);
     }
 
 
@@ -38,12 +54,24 @@ public class StorageFixture : RecallFixture
     [TestCase(false)]
     public async Task Should_be_able_to_exercise_sequencer_async(bool isTransactional)
     {
-        var services = SqlServerFixtureConfiguration.GetServiceCollection();
+        var configuration = new ConfigurationBuilder()
+            .AddUserSecrets<StorageFixture>()
+            .Build();
 
-        await ExercisePrimitiveEventSequencerAsync(new FixtureConfiguration(services)
-            .WithAddRecall(builder =>
+        var services = new ServiceCollection()
+            .AddSingleton<IConfiguration>(configuration)
+            .AddPipelineLogging();
+
+        await ExercisePrimitiveEventSequencerAsync(new RecallFixtureOptions(services)
+            .WithAddRecall(recallBuilder =>
             {
-                builder.Options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+                recallBuilder.Options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+
+                recallBuilder.UseSqlServerEventStorage(builder =>
+                {
+                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                    builder.Options.Schema = "recall_fixture";
+                });
             }), isTransactional);
     }
 }

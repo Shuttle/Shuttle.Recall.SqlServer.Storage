@@ -1,16 +1,16 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.EntityFrameworkCore;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IEventTypeRepository
+public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext) : IEventTypeRepository
 {
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-    private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
+    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
     private readonly Dictionary<string, Guid> _cache = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
 
@@ -26,9 +26,7 @@ public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStor
 
             if (!_cache.ContainsKey(key))
             {
-                await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
-                var connection = dbContext.Database.GetDbConnection();
+                var connection = _dbContext.Database.GetDbConnection();
 
                 await using var command = connection.CreateCommand();
 

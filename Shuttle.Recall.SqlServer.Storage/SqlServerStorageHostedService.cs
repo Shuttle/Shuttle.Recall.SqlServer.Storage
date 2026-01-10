@@ -8,8 +8,9 @@ using Shuttle.Core.Reflection;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class SqlServerStorageHostedService(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IHostedService
+public class SqlServerStorageHostedService(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IHostedService
 {
+    private readonly RecallOptions _recallOptions = Guard.AgainstNull(Guard.AgainstNull(recallOptions).Value);
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
     private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
 
@@ -17,6 +18,7 @@ public class SqlServerStorageHostedService(IOptions<SqlServerStorageOptions> sql
     {
         if (!_sqlServerStorageOptions.ConfigureDatabase)
         {
+            await _recallOptions.Operation.InvokeAsync(new("[SqlServerStorageHostedService.ConfigureDatabase/Disabled]"), cancellationToken);
             return;
         }
 
@@ -25,6 +27,8 @@ public class SqlServerStorageHostedService(IOptions<SqlServerStorageOptions> sql
 
         while (retry)
         {
+            await _recallOptions.Operation.InvokeAsync(new($"[SqlServerStorageHostedService.ConfigureDatabase/Starting] : retry count = {retryCount}"), cancellationToken);
+
             try
             {
                 await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -179,10 +183,14 @@ END CATCH
 EXEC sp_releaseapplock @Resource = '{typeof(SqlServerStorageHostedService).FullName}', @LockOwner = 'Session';
 ", cancellationToken: cancellationToken);
 
+                await _recallOptions.Operation.InvokeAsync(new($"[SqlServerStorageHostedService.ConfigureDatabase/Completed] : retry count = {retryCount}"), cancellationToken);
+
                 retry = false;
             }
             catch(Exception ex)
             {
+                await _recallOptions.Operation.InvokeAsync(new($"[SqlServerStorageHostedService.ConfigureDatabase/Failed] : exception = {ex.AllMessages()}"), cancellationToken);
+
                 retryCount++;
 
                 if (retryCount > 3 || ex.AllMessages().Contains("Database schema is outdated"))
