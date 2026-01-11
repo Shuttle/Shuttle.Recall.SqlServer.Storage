@@ -7,20 +7,19 @@ using System.Diagnostics.CodeAnalysis;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class PrimitiveEventSequencer(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IPrimitiveEventSequencer
+public class PrimitiveEventSequencer(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext) : IPrimitiveEventSequencer
 {
     private readonly RecallOptions _recallOptions = Guard.AgainstNull(Guard.AgainstNull(recallOptions).Value);
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-    private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
+    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
 
     public async ValueTask<bool> SequenceAsync(CancellationToken cancellationToken = default)
     {
         await _recallOptions.Operation.InvokeAsync(new("[PrimitiveEventSequencer/Starting]"), cancellationToken);
 
-        await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-        await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-        var rowsAffected = await dbContext.Database.ExecuteSqlRawAsync($@"
+        var rowsAffected = await _dbContext.Database.ExecuteSqlRawAsync($@"
 DECLARE @lock_result INT;
 DECLARE @MaxSequenceNumber BIGINT;
 DECLARE @RowsAffected INT = 0;

@@ -1,18 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
-using System.Diagnostics.CodeAnalysis;
 using Shuttle.Core.Reflection;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class SqlServerStorageHostedService(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IDbContextFactory<SqlServerStorageDbContext> dbContextFactory) : IHostedService
+public class SqlServerStorageHostedService(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, IServiceScopeFactory serviceScopeFactory) : IHostedService
 {
     private readonly RecallOptions _recallOptions = Guard.AgainstNull(Guard.AgainstNull(recallOptions).Value);
     private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-    private readonly IDbContextFactory<SqlServerStorageDbContext> _dbContextFactory = Guard.AgainstNull(dbContextFactory);
+    private readonly IServiceScopeFactory _serviceScopeFactory = Guard.AgainstNull(serviceScopeFactory);
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -21,6 +22,10 @@ public class SqlServerStorageHostedService(IOptions<RecallOptions> recallOptions
             await _recallOptions.Operation.InvokeAsync(new("[SqlServerStorageHostedService.ConfigureDatabase/Disabled]"), cancellationToken);
             return;
         }
+
+        using var scope = _serviceScopeFactory.CreateScope();
+
+        await using var dbContext = scope.ServiceProvider.GetRequiredService<SqlServerStorageDbContext>();
 
         var retry = true;
         var retryCount = 0;
@@ -31,8 +36,6 @@ public class SqlServerStorageHostedService(IOptions<RecallOptions> recallOptions
 
             try
             {
-                await using var dbContext = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
-
                 await dbContext.Database.ExecuteSqlRawAsync($@"
 DECLARE @lock_result INT;
 EXEC @lock_result = sp_getapplock @Resource = '{typeof(SqlServerStorageHostedService).FullName}', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 15000;

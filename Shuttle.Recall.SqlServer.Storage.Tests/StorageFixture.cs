@@ -34,12 +34,13 @@ public class StorageFixture : RecallFixture
             })
             .WithStarting(async serviceProvider =>
             {
-                var dbContextFactory = serviceProvider.GetRequiredService<IDbContextFactory<SqlServerStorageDbContext>>();
                 var options = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
 
                 var knownAggregateIds = string.Join(',', KnownAggregateIds.Select(id => $"'{id}'"));
 
-                await using var dbContext = await dbContextFactory.CreateDbContextAsync();
+                using var scope = serviceProvider.GetRequiredService<IServiceScopeFactory>().CreateScope();
+
+                await using var dbContext = scope.ServiceProvider.GetRequiredService<SqlServerStorageDbContext>();
 #pragma warning disable EF1002
                 await dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{options.Schema}].[PrimitiveEvent] WHERE Id IN ({knownAggregateIds})");
 #pragma warning restore EF1002

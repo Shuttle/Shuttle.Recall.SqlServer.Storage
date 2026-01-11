@@ -22,7 +22,7 @@ public static class RecallBuilderExtensions
             services.TryAddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
             services.TryAddScoped<IEventTypeRepository, EventTypeRepository>();
             services.TryAddScoped<IIdKeyRepository, IdKeyRepository>();
-            services.TryAddSingleton<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
+            services.TryAddScoped<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
             services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
 
             services.AddOptions<SqlServerStorageOptions>().Configure(options =>
