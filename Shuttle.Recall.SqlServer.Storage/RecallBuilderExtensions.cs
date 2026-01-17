@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using System.Data.Common;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
@@ -33,15 +36,34 @@ public static class RecallBuilderExtensions
                 options.PrimitiveEventSequencerLimit = sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit;
             });
 
-            services.AddDbContextFactory<SqlServerStorageDbContext>(dbContextFactoryBuilder =>
+            services.AddDbContext<SqlServerStorageDbContext>((sp, options) =>
             {
-                dbContextFactoryBuilder.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, sqlServerOptions =>
+                var dbConnection = sp.GetService<DbConnection>();
+
+                if (dbConnection != null)
                 {
-                    sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
-                });
+                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageBuilder.Options.ConnectionString);
+
+                    if (!dbConnection.Database.Equals(sqlConnectionStringBuilder.InitialCatalog, StringComparison.InvariantCultureIgnoreCase) ||
+                        !dbConnection.DataSource.Equals(sqlConnectionStringBuilder.DataSource, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        throw new ApplicationException(Resources.DbConnectionException);
+                    }
+
+                    options.UseSqlServer(dbConnection, Configure);
+                }
+                else
+                {
+                    options.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, Configure);
+                }
             });
 
             return recallBuilder;
+
+            void Configure(SqlServerDbContextOptionsBuilder sqlServerOptions)
+            {
+                sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
+            }
         }
     }
 }

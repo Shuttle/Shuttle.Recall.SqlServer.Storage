@@ -79,6 +79,15 @@ namespace Shuttle.Recall.SqlServer.Storage {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to The &apos;DbConnection&apos; has a &apos;ConnectionString &apos; that is different to the one specified in the SqlServerEventProcessingOptions..
+        /// </summary>
+        public static string DbConnectionException {
+            get {
+                return ResourceManager.GetString("DbConnectionException", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No &apos;SqlServerStorageOptions.Schema&apos; has been specified..
         /// </summary>
         public static string SchemaOptionException {

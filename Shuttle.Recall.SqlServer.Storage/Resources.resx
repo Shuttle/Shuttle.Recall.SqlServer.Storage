@@ -123,6 +123,9 @@
   <data name="CountMustBeGreaterThanZero" xml:space="preserve">
     <value>Count must be greater than zero.</value>
   </data>
+  <data name="DbConnectionException" xml:space="preserve">
+    <value>The 'DbConnection' has a 'ConnectionString ' that is different to the one specified in the SqlServerEventProcessingOptions.</value>
+  </data>
   <data name="SchemaOptionException" xml:space="preserve">
     <value>No 'SqlServerStorageOptions.Schema' has been specified.</value>
   </data>
