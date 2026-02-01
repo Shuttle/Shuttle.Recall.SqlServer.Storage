@@ -4,7 +4,7 @@ using System.Text.Json;
 using Serilog;
 using Shuttle.Core.Contract;
 
-namespace Shuttle.Recall.SqlServer.Storage.Upgrade;
+namespace Shuttle.Recall.SqlServer.Storage.Database;
 
 public class UpgradePrimitiveEventService(ILogger logger, string connectionString, string schema, long fromSequenceNumber)
 {
@@ -21,6 +21,21 @@ public class UpgradePrimitiveEventService(ILogger logger, string connectionStrin
             await connection.OpenAsync();
 
             await InitialDatabaseConfigurationAsync(connection);
+
+            var checkCommand = connection.CreateCommand();
+
+            checkCommand.CommandText = $@"
+IF COL_LENGTH('{_schema}.PrimitiveEvent', 'DateRegistered') IS NOT NULL
+    SELECT 1
+ELSE
+    SELECT 0
+";
+
+            if (((int?)await checkCommand.ExecuteScalarAsync() ?? 0) == 0)
+            {
+                logger.Information("The 'PrimitiveEvent' table is up to date.");
+                return;
+            }
 
             var sql = $@"
             SELECT 

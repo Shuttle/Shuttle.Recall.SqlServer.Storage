@@ -1,4 +1,4 @@
-﻿namespace Shuttle.Recall.SqlServer.Storage.Upgrade.v20;
+﻿namespace Shuttle.Recall.SqlServer.Storage.Database.v20;
 
 public class PrimitiveEvent
 {

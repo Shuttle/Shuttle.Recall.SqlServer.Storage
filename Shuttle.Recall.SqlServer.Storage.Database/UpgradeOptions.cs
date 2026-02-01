@@ -1,4 +1,4 @@
-﻿namespace Shuttle.Recall.SqlServer.Storage.Upgrade;
+﻿namespace Shuttle.Recall.SqlServer.Storage.Database;
 
 public class UpgradeOptions
 {

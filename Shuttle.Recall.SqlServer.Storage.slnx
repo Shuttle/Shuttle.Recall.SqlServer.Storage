@@ -4,6 +4,6 @@
     <File Path="README.md" />
   </Folder>
   <Project Path="Shuttle.Recall.SqlServer.Storage.Tests/Shuttle.Recall.SqlServer.Storage.Tests.csproj" />
-  <Project Path="Shuttle.Recall.SqlServer.Storage.Upgrade/Shuttle.Recall.SqlServer.Storage.Upgrade.csproj" Id="d91ad134-9cc6-4ad0-8d12-232702b175c7" />
+  <Project Path="Shuttle.Recall.SqlServer.Storage.Database/Shuttle.Recall.SqlServer.Storage.Database.csproj" Id="d91ad134-9cc6-4ad0-8d12-232702b175c7" />
   <Project Path="Shuttle.Recall.SqlServer.Storage/Shuttle.Recall.SqlServer.Storage.csproj" />
 </Solution>

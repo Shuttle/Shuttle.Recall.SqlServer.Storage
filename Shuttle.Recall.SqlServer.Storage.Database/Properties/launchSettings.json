@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Shuttle.Recall.SqlServer.Storage.Upgrade": {
+      "commandName": "Project",
+      "commandLineArgs": "-cs \"Data Source=.;Initial Catalog=Access;user id=sa;password=Pass!000;TrustServerCertificate=true\" -s \"access\""
+    }
+  }
+}

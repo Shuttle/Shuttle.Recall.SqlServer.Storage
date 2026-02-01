@@ -173,7 +173,7 @@ BEGIN TRY
 
         IF @needsUpgrade = 1
         BEGIN
-            THROW 50001, 'Database schema is outdated. Please upgrade the database to version 21.0.0 using the Shuttle.Recall.SqlServer.Storage.Upgrade application.', 1;
+            THROW 50001, 'Database schema is outdated. Please upgrade the database to version 21.0.0 using the Shuttle.Recall.SqlServer.Storage.Database application.', 1;
         END
     END
 
