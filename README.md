@@ -1,77 +1,94 @@
 # Shuttle.Recall.SqlServer.Storage
 
-```
-PM> Install-Package Shuttle.Recall.SqlServer.Storage
-```
+Sql Server implementation of the `Shuttle.Recall` event sourcing `IEventStore`.
 
-A Sql Server implementation of the `Shuttle.Recall` event sourcing `EventStore`.
+## Installation
+
+```bash
+dotnet add package Shuttle.Recall.SqlServer.Storage
+```
 
 ## Configuration
 
+In order to use Sql Server for event storage you should use the `UseSqlServerEventStorage` extension:
+
 ```c#
-services.AddSqlEventStorage();
+services.AddRecall(builder =>
+{
+    builder.UseSqlServerEventStorage(options =>
+    {
+        options.ConnectionString = "connection-string";
+    });
+});
+```
+
+The options can also be configured via `appsettings.json`:
+
+```json
+{
+  "Shuttle": {
+    "Recall": {
+      "SqlServer": {
+        "Storage": {
+          "ConnectionString": "connection-string",
+          "Schema": "dbo"
+        }
+      }
+    }
+  }
+}
 ```
 
 ## Database
 
-Please reference the `Shuttle.Recall.EntityFrameworkCore.SqlServer.Storage` package and use the Entity Framework Core migration mechanism to create the event store database structures.
+By default, the `SqlServerStorageHostedService` will automatically create the required database structures if `ConfigureDatabase` is set to `true` (which is the default). If you prefer to manage the database structure manually, you can use the provided `Shuttle.Recall.SqlServer.Storage.Database` console application.
 
-## IKeyStore
+## IIdKeyRepository
 
-You are bound to run into situations where you have a business or other key that is required to be unique.  Given that the `IEventStore` makes use of only surrogate keys the `IKeyStore` is used to create a unique list of keys associated with a given aggregate identifier.
+You are bound to run into situations where you have a business or other key that is required to be unique. Given that the `IEventStore` makes use of only surrogate keys, the `IIdKeyRepository` is used to create a unique list of keys associated with a given aggregate identifier.
 
-Since the keys used in the key store have to be unique you should ensure that they contain enough information to be unique and have the intended meaning.
+Since the keys used in the key store have to be unique, you should ensure that they contain enough information to be unique and have the intended meaning.
 
 A key could be something such as `[order-number]:ord-001/2016`, `[customer-onboarding]:id-number=0000005555089`, or `[system-name/profile]:672cda1c-c3ec-4f81-a577-e64f9f14e141`.
 
-### Contains
+### ContainsAsync
 
-``` c#
-bool Contains(string key);
+```c#
+ValueTask<bool> ContainsAsync(string key, CancellationToken cancellationToken = default);
+ValueTask<bool> ContainsAsync(Guid id, CancellationToken cancellationToken = default);
 ```
 
-Returns `true` if the given `key` has an associated aggregate identifier.
+Returns `true` if the given `key` or `id` is present in the key store.
 
----
-``` c#
-bool Contains(Guid id);
-```
+### FindAsync
 
-Returns `true` if the given `id` is present in the key store.
-
----
-### Get
-
-``` c#
-Guid? Get(string key);
+```c#
+ValueTask<Guid?> FindAsync(string key, CancellationToken cancellationToken = default);
 ```
 
 Returns the `Guid` associated with the given key; else `null`.
 
----
-### Remove
+### RemoveAsync
 
-``` c#
-void Remove(string key);
-void Remove(Guid id);
+```c#
+Task RemoveAsync(string key, CancellationToken cancellationToken = default);
+Task RemoveAsync(Guid id, CancellationToken cancellationToken = default);
 ```
 
-When specifying the `key` the assocation with the identifier will be removed.  When specifying the `id` all keys associated with the given `id` will be removed.
+When specifying the `key`, the association with the identifier will be removed. When specifying the `id`, all keys associated with the given `id` will be removed.
 
----
-### Add
+### AddAsync
 
-``` c#
-void Add(Guid id, string key);
+```c#
+Task AddAsync(Guid id, string key, CancellationToken cancellationToken = default);
 ```
 
 Creates an association between the `id` and the `key`.
 
----
-### Add
+### RekeyAsync
 
-``` c#
-void Rekey(string key, string rekey);
+```c#
+Task RekeyAsync(string key, string rekey, CancellationToken cancellationToken = default);
 ```
 
 Changes `key` to a new key specified by `rekey`.
