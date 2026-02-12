@@ -8,7 +8,7 @@
 
   <PropertyGroup>
     <Description>Sql Server event storage.</Description>
-    <Version>21.0.1-beta</Version>
+    <Version>21.0.1-rc1</Version>
     <PackageProjectUrl></PackageProjectUrl>
     <RepositoryUrl>https://github.com/Shuttle/Shuttle.Recall.SqlServer.Storage.git</RepositoryUrl>
     <PackageTags>eventsourcing eventsource event-sourcing event-source eventstore event-store</PackageTags>
@@ -32,8 +32,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.1" />
-    <PackageReference Include="Shuttle.Recall" Version="21.0.1-beta" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.3" />
+    <PackageReference Include="Shuttle.Recall" Version="21.0.1-rc1" />
   </ItemGroup>
 
   <ItemGroup>
