@@ -4,7 +4,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
-using Shuttle.Core.Pipelines.Logging;
 using Shuttle.Recall.Testing;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
@@ -23,7 +22,6 @@ public class IdKeyRepositoryFixture
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging()
-            .AddPipelineLogging()
             .AddRecall(recallBuilder =>
             {
                 recallBuilder.UseSqlServerEventStorage(builder =>

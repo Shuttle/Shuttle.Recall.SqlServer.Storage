@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using NUnit.Framework;
-using Shuttle.Core.Pipelines.Logging;
 using Shuttle.Recall.Testing;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
@@ -20,8 +19,7 @@ public class StorageFixture : RecallFixture
             .Build();
 
         var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddPipelineLogging();
+            .AddSingleton<IConfiguration>(configuration);
 
         var fixtureOptions = new RecallFixtureOptions(services)
             .WithAddRecall(recallBuilder =>
@@ -60,8 +58,7 @@ public class StorageFixture : RecallFixture
             .Build();
 
         var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration)
-            .AddPipelineLogging();
+            .AddSingleton<IConfiguration>(configuration);
 
         await ExercisePrimitiveEventSequencerAsync(new RecallFixtureOptions(services)
             .WithAddRecall(recallBuilder =>
