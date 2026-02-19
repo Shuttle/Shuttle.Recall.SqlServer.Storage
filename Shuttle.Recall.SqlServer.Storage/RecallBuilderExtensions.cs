@@ -36,34 +36,15 @@ public static class RecallBuilderExtensions
                 options.PrimitiveEventSequencerLimit = sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit;
             });
 
-            services.AddDbContext<SqlServerStorageDbContext>((sp, options) =>
+            services.AddDbContextFactory<SqlServerStorageDbContext>(optionsBuilder =>
             {
-                var dbConnection = sp.GetService<DbConnection>();
-
-                if (dbConnection != null)
+                optionsBuilder.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, sqlServerOptions =>
                 {
-                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageBuilder.Options.ConnectionString);
-
-                    if (!dbConnection.Database.Equals(sqlConnectionStringBuilder.InitialCatalog, StringComparison.InvariantCultureIgnoreCase) ||
-                        !dbConnection.DataSource.Equals(sqlConnectionStringBuilder.DataSource, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        throw new ApplicationException(Resources.DbConnectionException);
-                    }
-
-                    options.UseSqlServer(dbConnection, Configure);
-                }
-                else
-                {
-                    options.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, Configure);
-                }
+                    sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
+                });
             });
 
             return recallBuilder;
-
-            void Configure(SqlServerDbContextOptionsBuilder sqlServerOptions)
-            {
-                sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
-            }
         }
     }
 }
