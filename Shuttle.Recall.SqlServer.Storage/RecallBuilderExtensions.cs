@@ -34,17 +34,37 @@ public static class RecallBuilderExtensions
                 options.Schema = sqlServerStorageBuilder.Options.Schema;
                 options.CommandTimeout = sqlServerStorageBuilder.Options.CommandTimeout;
                 options.PrimitiveEventSequencerLimit = sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit;
+                options.DbConnectionServiceKey = sqlServerStorageBuilder.Options.DbConnectionServiceKey;
             });
 
-            services.AddDbContextFactory<SqlServerStorageDbContext>(optionsBuilder =>
+            services.AddDbContext<SqlServerStorageDbContext>((sp, options) =>
             {
-                optionsBuilder.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, sqlServerOptions =>
+                var dbConnection = sp.GetKeyedService<DbConnection>(sqlServerStorageBuilder.Options.DbConnectionServiceKey);
+
+                if (dbConnection != null)
                 {
-                    sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
-                });
+                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageBuilder.Options.ConnectionString);
+
+                    if (!dbConnection.Database.Equals(sqlConnectionStringBuilder.InitialCatalog, StringComparison.InvariantCultureIgnoreCase) ||
+                        !dbConnection.DataSource.Equals(sqlConnectionStringBuilder.DataSource, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        throw new ApplicationException(Resources.DbConnectionException);
+                    }
+
+                    options.UseSqlServer(dbConnection, Configure);
+                }
+                else
+                {
+                    options.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, Configure);
+                }
             });
 
             return recallBuilder;
+
+            void Configure(SqlServerDbContextOptionsBuilder sqlServerOptions)
+            {
+                sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
+            }
         }
     }
 }

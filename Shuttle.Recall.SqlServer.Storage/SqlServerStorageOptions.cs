@@ -9,4 +9,5 @@ public class SqlServerStorageOptions
     public bool ConfigureDatabase { get; set; } = true;
     public TimeSpan CommandTimeout { get; set; } = TimeSpan.FromSeconds(30);
     public int PrimitiveEventSequencerLimit { get; set; } = 100;
+    public string DbConnectionServiceKey { get; set; } = "SqlServerStorageDbConnection";
 }
