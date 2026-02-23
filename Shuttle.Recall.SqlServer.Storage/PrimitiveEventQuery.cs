@@ -105,4 +105,44 @@ ORDER BY
 
         return result;
     }
+
+    public async Task<long?> GetMaximumSequenceNumberAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+
+        await using var command = connection.CreateCommand();
+
+        command.CommandText = $@"
+IF EXISTS
+(
+    SELECT 
+        NULL
+    FROM 
+        [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]
+    WHERE 
+        SequenceNumber IS NULL
+)
+BEGIN
+    SELECT CAST(NULL AS bigint) AS MaxSequenceNumber;
+END
+ELSE
+BEGIN
+    SELECT TOP (1) 
+        SequenceNumber AS MaxSequenceNumber
+    FROM 
+        [access].[PrimitiveEvent]
+    WHERE 
+        SequenceNumber IS NOT NULL
+    ORDER BY 
+        SequenceNumber DESC;
+END
+";
+
+        if (connection.State != ConnectionState.Open)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        return (long?)await command.ExecuteScalarAsync(cancellationToken);
+    }
 }
