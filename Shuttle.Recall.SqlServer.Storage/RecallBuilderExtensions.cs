@@ -37,9 +37,9 @@ public static class RecallBuilderExtensions
                 options.DbConnectionServiceKey = sqlServerStorageBuilder.Options.DbConnectionServiceKey;
             });
 
-            services.AddDbContext<SqlServerStorageDbContext>((sp, options) =>
+            services.AddDbContext<SqlServerStorageDbContext>((serviceProvider, options) =>
             {
-                var dbConnection = sp.GetKeyedService<DbConnection>(sqlServerStorageBuilder.Options.DbConnectionServiceKey);
+                var dbConnection = serviceProvider.GetKeyedService<DbConnection>(sqlServerStorageBuilder.Options.DbConnectionServiceKey);
 
                 if (dbConnection != null)
                 {
