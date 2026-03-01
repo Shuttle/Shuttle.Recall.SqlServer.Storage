@@ -70,9 +70,58 @@ ORDER BY
         return result;
     }
 
-    public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync($"DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WHERE Id = @Id", [new SqlParameter("@Id", id)], cancellationToken);
+        var eventTypeIds = new List<Guid>();
+
+        foreach (var eventType in specification.EventTypes)
+        {
+            eventTypeIds.Add(await _eventTypeRepository.GetIdAsync(eventType, cancellationToken));
+        }
+
+        await _dbContext.Database.ExecuteSqlRawAsync(@$"
+DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]
+FROM 
+	[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] es
+WHERE 
+(
+    @SequenceNumberStart = 0
+    OR
+	es.SequenceNumber >= @SequenceNumberStart
+)
+AND
+(
+    @SequenceNumberEnd = 0
+    OR
+	es.SequenceNumber <= @SequenceNumberEnd
+)
+{(
+    !eventTypeIds.Any()
+        ? string.Empty
+        : $"AND es.EventTypeId IN ({string.Join(",", eventTypeIds.Select(id => string.Concat("'", id, "'")).ToArray())})"
+)}
+{(
+    !specification.HasIds
+        ? string.Empty
+        : $"AND es.Id IN ({string.Join(",", specification.Ids.Select(id => string.Concat("'", id, "'")).ToArray())})"
+)}
+{(
+    !specification.HasVersions
+        ? string.Empty
+        : $"AND es.[Version] IN ({string.Join(",", specification.Versions).ToArray()})"
+)}
+{(
+    !specification.HasSequenceNumbers
+        ? string.Empty
+        : $"AND es.SequenceNumber IN ({string.Join(",", specification.SequenceNumbers)})"
+)}
+",
+            [
+                new SqlParameter("@SequenceNumberStart", specification.SequenceNumberStart),
+                new SqlParameter("@SequenceNumberEnd", specification.SequenceNumberEnd)
+            ],
+            cancellationToken
+        );
     }
 
     public async Task SaveAsync(IEnumerable<PrimitiveEvent> primitiveEvents, CancellationToken cancellationToken = default)

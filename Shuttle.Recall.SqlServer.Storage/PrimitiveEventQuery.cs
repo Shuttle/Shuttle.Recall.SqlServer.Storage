@@ -55,22 +55,22 @@ AND
 {(
     !eventTypeIds.Any()
         ? string.Empty
-        : $"AND EventTypeId IN ({string.Join(",", eventTypeIds.Select(id => string.Concat("'", id, "'")).ToArray())})"
+        : $"AND es.EventTypeId IN ({string.Join(",", eventTypeIds.Select(id => string.Concat("'", id, "'")).ToArray())})"
 )}
 {(
     !specification.HasIds
         ? string.Empty
-        : $"AND Id IN ({string.Join(",", specification.Ids.Select(id => string.Concat("'", id, "'")).ToArray())})"
+        : $"AND es.Id IN ({string.Join(",", specification.Ids.Select(id => string.Concat("'", id, "'")).ToArray())})"
 )}
 {(
     !specification.HasVersions
         ? string.Empty
-        : $"AND [Version] IN ({string.Join(",", specification.Versions).ToArray()})"
+        : $"AND es.[Version] IN ({string.Join(",", specification.Versions).ToArray()})"
 )}
 {(
     !specification.HasSequenceNumbers
         ? string.Empty
-        : $"AND SequenceNumber IN ({string.Join(",", specification.SequenceNumbers)})"
+        : $"AND es.SequenceNumber IN ({string.Join(",", specification.SequenceNumbers)})"
 )}
 ORDER BY
 	es.SequenceNumber
