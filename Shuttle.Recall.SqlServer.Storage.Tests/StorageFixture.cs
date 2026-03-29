@@ -63,7 +63,10 @@ public class StorageFixture : RecallFixture
         await ExercisePrimitiveEventSequencerAsync(new RecallFixtureOptions(services)
             .WithAddRecall(recallBuilder =>
             {
-                recallBuilder.Options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+                recallBuilder.Configure(options =>
+                {
+                    options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+                });
 
                 recallBuilder.UseSqlServerEventStorage(builder =>
                 {
