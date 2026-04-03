@@ -19,17 +19,16 @@ public class StorageFixture : RecallFixture
             .Build();
 
         var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration);
+            .AddSingleton<IConfiguration>(configuration)
+            .AddRecall()
+            .UseSqlServerEventStorage(options =>
+            {
+                options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                options.Schema = "recall_fixture";
+            })
+            .Services;
 
         var fixtureOptions = new RecallFixtureOptions(services)
-            .WithAddRecall(recallBuilder =>
-            {
-                recallBuilder.UseSqlServerEventStorage(builder =>
-                {
-                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
-                    builder.Options.Schema = "recall_fixture";
-                });
-            })
             .WithStarting(async serviceProvider =>
             {
                 var options = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
@@ -58,21 +57,19 @@ public class StorageFixture : RecallFixture
             .Build();
 
         var services = new ServiceCollection()
-            .AddSingleton<IConfiguration>(configuration);
-
-        await ExercisePrimitiveEventSequencerAsync(new RecallFixtureOptions(services)
-            .WithAddRecall(recallBuilder =>
+            .AddSingleton<IConfiguration>(configuration)
+            .AddRecall(options =>
             {
-                recallBuilder.Configure(options =>
-                {
-                    options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
-                });
+                options.EventStore.PrimitiveEventSequencerIdleDurations = [TimeSpan.FromMilliseconds(25)];
+            })
+            .UseSqlServerEventStorage(options =>
+            {
+                options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                options.Schema = "recall_fixture";
+            })
+            .RegisterPrimitiveEventSequencing()
+            .Services;
 
-                recallBuilder.UseSqlServerEventStorage(builder =>
-                {
-                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
-                    builder.Options.Schema = "recall_fixture";
-                });
-            }), isTransactional);
+        await ExercisePrimitiveEventSequencerAsync(new(services), isTransactional);
     }
 }

@@ -13,37 +13,33 @@ public static class RecallBuilderExtensions
 {
     extension(RecallBuilder recallBuilder)
     {
-        public RecallBuilder UseSqlServerEventStorage(Action<SqlServerStorageBuilder>? builder = null)
+        public RecallBuilder UseSqlServerEventStorage(Action<SqlServerStorageOptions>? configureOptions = null)
         {
             var services = recallBuilder.Services;
-            var sqlServerStorageBuilder = new SqlServerStorageBuilder(services);
 
-            builder?.Invoke(sqlServerStorageBuilder);
-
-            services.TryAddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
-            services.TryAddScoped<IPrimitiveEventQuery, PrimitiveEventQuery>();
-            services.TryAddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
-            services.TryAddScoped<IEventTypeRepository, EventTypeRepository>();
-            services.TryAddScoped<IIdKeyRepository, IdKeyRepository>();
-            services.TryAddScoped<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
-            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
-
+            services.AddOptions();
             services.AddOptions<SqlServerStorageOptions>().Configure(options =>
             {
-                options.ConnectionString = sqlServerStorageBuilder.Options.ConnectionString;
-                options.Schema = sqlServerStorageBuilder.Options.Schema;
-                options.CommandTimeout = sqlServerStorageBuilder.Options.CommandTimeout;
-                options.PrimitiveEventSequencerLimit = sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit < 1 ? 1 : sqlServerStorageBuilder.Options.PrimitiveEventSequencerLimit;
-                options.DbConnectionServiceKey = sqlServerStorageBuilder.Options.DbConnectionServiceKey;
+                configureOptions?.Invoke(options);
             });
+
+            services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
+            services.AddScoped<IPrimitiveEventQuery, PrimitiveEventQuery>();
+            services.AddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
+            services.AddScoped<IEventTypeRepository, EventTypeRepository>();
+            services.AddScoped<IIdKeyRepository, IdKeyRepository>();
+            services.AddScoped<IPrimitiveEventSequencer, PrimitiveEventSequencer>();
+            services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, SqlServerStorageHostedService>());
 
             services.AddDbContext<SqlServerStorageDbContext>((serviceProvider, options) =>
             {
-                var dbConnection = serviceProvider.GetKeyedService<DbConnection>(sqlServerStorageBuilder.Options.DbConnectionServiceKey);
+                var sqlServerStorageOptions = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
+
+                var dbConnection = serviceProvider.GetKeyedService<DbConnection>(sqlServerStorageOptions.DbConnectionServiceKey);
 
                 if (dbConnection != null)
                 {
-                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageBuilder.Options.ConnectionString);
+                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageOptions.ConnectionString);
 
                     if (!dbConnection.Database.Equals(sqlConnectionStringBuilder.InitialCatalog, StringComparison.InvariantCultureIgnoreCase) ||
                         !dbConnection.DataSource.Equals(sqlConnectionStringBuilder.DataSource, StringComparison.InvariantCultureIgnoreCase))
@@ -51,20 +47,21 @@ public static class RecallBuilderExtensions
                         throw new ApplicationException(Resources.DbConnectionException);
                     }
 
-                    options.UseSqlServer(dbConnection, Configure);
+                    options.UseSqlServer(dbConnection, sqlServerOptions =>
+                    {
+                        sqlServerOptions.CommandTimeout(sqlServerStorageOptions.CommandTimeout.Seconds);
+                    });
                 }
                 else
                 {
-                    options.UseSqlServer(sqlServerStorageBuilder.Options.ConnectionString, Configure);
+                    options.UseSqlServer(sqlServerStorageOptions.ConnectionString, sqlServerOptions =>
+                    {
+                        sqlServerOptions.CommandTimeout(sqlServerStorageOptions.CommandTimeout.Seconds);
+                    });
                 }
             });
 
             return recallBuilder;
-
-            void Configure(SqlServerDbContextOptionsBuilder sqlServerOptions)
-            {
-                sqlServerOptions.CommandTimeout(sqlServerStorageBuilder.Options.CommandTimeout.Seconds);
-            }
         }
     }
 }

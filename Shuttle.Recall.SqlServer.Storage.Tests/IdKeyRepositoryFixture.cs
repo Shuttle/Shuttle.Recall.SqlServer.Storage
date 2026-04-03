@@ -19,19 +19,17 @@ public class IdKeyRepositoryFixture
             .AddUserSecrets<StorageFixture>()
             .Build();
 
-        var services = new ServiceCollection()
+        var serviceProvider = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddLogging()
-            .AddRecall(recallBuilder =>
+            .AddRecall()
+            .UseSqlServerEventStorage(options =>
             {
-                recallBuilder.UseSqlServerEventStorage(builder =>
-                {
-                    builder.Options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
-                    builder.Options.Schema = "recall_fixture";
-                });
-            });
-
-        var serviceProvider = services.BuildServiceProvider();
+                options.ConnectionString = configuration.GetConnectionString("Recall") ?? throw new ApplicationException("A 'ConnectionString' with name 'Recall' is required which points to a Sql Server database.");
+                options.Schema = "recall_fixture";
+            })
+            .Services
+            .BuildServiceProvider();
 
         await serviceProvider.StartHostedServicesAsync();
 
