@@ -1,6 +1,5 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -34,7 +33,6 @@ public static class RecallBuilderExtensions
             services.AddDbContext<SqlServerStorageDbContext>((serviceProvider, options) =>
             {
                 var sqlServerStorageOptions = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
-
                 var dbConnection = serviceProvider.GetKeyedService<DbConnection>(sqlServerStorageOptions.DbConnectionServiceKey);
 
                 if (dbConnection != null)
@@ -49,14 +47,14 @@ public static class RecallBuilderExtensions
 
                     options.UseSqlServer(dbConnection, sqlServerOptions =>
                     {
-                        sqlServerOptions.CommandTimeout(sqlServerStorageOptions.CommandTimeout.Seconds);
+                        sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
                     });
                 }
                 else
                 {
                     options.UseSqlServer(sqlServerStorageOptions.ConnectionString, sqlServerOptions =>
                     {
-                        sqlServerOptions.CommandTimeout(sqlServerStorageOptions.CommandTimeout.Seconds);
+                        sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
                     });
                 }
             });
