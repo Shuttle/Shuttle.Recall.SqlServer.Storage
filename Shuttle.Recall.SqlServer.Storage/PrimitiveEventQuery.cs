@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
 using System.Data;
@@ -85,6 +86,13 @@ ORDER BY
         }
 
         var result = new List<PrimitiveEvent>();
+
+        var currentTransaction = _dbContext.Database.CurrentTransaction;
+
+        if (currentTransaction != null)
+        {
+            command.Transaction = currentTransaction.GetDbTransaction();
+        }
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken);
 

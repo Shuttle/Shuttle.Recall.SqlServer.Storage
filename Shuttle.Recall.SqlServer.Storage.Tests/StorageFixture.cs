@@ -7,12 +7,11 @@ using Shuttle.Recall.Testing;
 
 namespace Shuttle.Recall.SqlServer.Storage.Tests;
 
+[TestFixture]
 public class StorageFixture : RecallFixture
 {
     [Test]
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task Should_be_able_to_exercise_event_store_async(bool isTransactional)
+    public async Task Should_be_able_to_exercise_event_store_async()
     {
         var configuration = new ConfigurationBuilder()
             .AddUserSecrets<StorageFixture>()
@@ -43,14 +42,12 @@ public class StorageFixture : RecallFixture
 #pragma warning restore EF1002
             });
 
-        await ExerciseStorageAsync(fixtureOptions, isTransactional);
+        await ExerciseStorageAsync(fixtureOptions);
     }
 
 
     [Test]
-    [TestCase(true)]
-    [TestCase(false)]
-    public async Task Should_be_able_to_exercise_sequencer_async(bool isTransactional)
+    public async Task Should_be_able_to_exercise_sequencer_async()
     {
         var configuration = new ConfigurationBuilder()
             .AddUserSecrets<StorageFixture>()
@@ -70,6 +67,6 @@ public class StorageFixture : RecallFixture
             .RegisterPrimitiveEventSequencing()
             .Services;
 
-        await ExercisePrimitiveEventSequencerAsync(new(services), isTransactional);
+        await ExercisePrimitiveEventSequencerAsync(new(services));
     }
 }
