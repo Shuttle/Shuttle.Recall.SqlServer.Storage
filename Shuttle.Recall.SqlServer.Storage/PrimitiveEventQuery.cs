@@ -1,8 +1,9 @@
-﻿using System.Data;
+﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Shuttle.Core.Contract;
-using Microsoft.Data.SqlClient;
+using System.Data;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
