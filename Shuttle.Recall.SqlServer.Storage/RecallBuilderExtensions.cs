@@ -1,10 +1,10 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using System.Data.Common;
+using Microsoft.Data.SqlClient;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
@@ -16,12 +16,14 @@ public static class RecallBuilderExtensions
         {
             var services = recallBuilder.Services;
 
-            services.AddOptions();
             services.AddOptions<SqlServerStorageOptions>().Configure(options =>
             {
                 configureOptions?.Invoke(options);
             });
 
+            services.AddKeyedScoped<DbConnection>(SqlServerStorageDefaults.DbConnectionServiceKey, (serviceProvider, _) =>
+                new SqlConnection(serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value.ConnectionString));
+            
             services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
             services.AddScoped<IPrimitiveEventQuery, PrimitiveEventQuery>();
             services.AddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
@@ -33,30 +35,12 @@ public static class RecallBuilderExtensions
             services.AddDbContext<SqlServerStorageDbContext>((serviceProvider, options) =>
             {
                 var sqlServerStorageOptions = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
-                var dbConnection = serviceProvider.GetKeyedService<DbConnection>(sqlServerStorageOptions.DbConnectionServiceKey);
+                var dbConnection = serviceProvider.GetRequiredKeyedService<DbConnection>(sqlServerStorageOptions.DbConnectionServiceKey);
 
-                if (dbConnection != null)
+                options.UseSqlServer(dbConnection, sqlServerOptions =>
                 {
-                    var sqlConnectionStringBuilder = new SqlConnectionStringBuilder(sqlServerStorageOptions.ConnectionString);
-
-                    if (!dbConnection.Database.Equals(sqlConnectionStringBuilder.InitialCatalog, StringComparison.InvariantCultureIgnoreCase) ||
-                        !dbConnection.DataSource.Equals(sqlConnectionStringBuilder.DataSource, StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        throw new ApplicationException(Resources.DbConnectionException);
-                    }
-
-                    options.UseSqlServer(dbConnection, sqlServerOptions =>
-                    {
-                        sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
-                    });
-                }
-                else
-                {
-                    options.UseSqlServer(sqlServerStorageOptions.ConnectionString, sqlServerOptions =>
-                    {
-                        sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
-                    });
-                }
+                    sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
+                });
             });
 
             return recallBuilder;

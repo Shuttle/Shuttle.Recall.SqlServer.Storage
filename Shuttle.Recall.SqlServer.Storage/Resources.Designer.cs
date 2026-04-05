@@ -79,7 +79,7 @@ namespace Shuttle.Recall.SqlServer.Storage {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The &apos;DbConnection&apos; has a &apos;ConnectionString &apos; that is different to the one specified in the SqlServerEventProcessingOptions..
+        ///   Looks up a localized string similar to Could not resolve a &apos;DbConnection&apos; service with key &apos;{0}&apos;..
         /// </summary>
         public static string DbConnectionException {
             get {
