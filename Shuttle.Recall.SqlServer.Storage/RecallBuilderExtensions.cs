@@ -21,9 +21,6 @@ public static class RecallBuilderExtensions
                 configureOptions?.Invoke(options);
             });
 
-            services.AddKeyedScoped<DbConnection>(SqlServerStorageDefaults.DbConnectionServiceKey, (serviceProvider, _) =>
-                new SqlConnection(serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value.ConnectionString));
-            
             services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
             services.AddScoped<IPrimitiveEventQuery, PrimitiveEventQuery>();
             services.AddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
@@ -35,9 +32,8 @@ public static class RecallBuilderExtensions
             services.AddDbContext<SqlServerStorageDbContext>((serviceProvider, options) =>
             {
                 var sqlServerStorageOptions = serviceProvider.GetRequiredService<IOptions<SqlServerStorageOptions>>().Value;
-                var dbConnection = serviceProvider.GetRequiredKeyedService<DbConnection>(sqlServerStorageOptions.DbConnectionServiceKey);
 
-                options.UseSqlServer(dbConnection, sqlServerOptions =>
+                options.UseSqlServer(sqlServerStorageOptions.ConnectionString, sqlServerOptions =>
                 {
                     sqlServerOptions.CommandTimeout((int)sqlServerStorageOptions.CommandTimeout.TotalSeconds);
                 });
