@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Events;
-using Shuttle.Core.Cli;
+using Shuttle.Cli;
 
 namespace Shuttle.Recall.SqlServer.Storage.Database;
 

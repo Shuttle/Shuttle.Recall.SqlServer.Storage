@@ -2,7 +2,7 @@
 using Microsoft.Data.SqlClient;
 using System.Text.Json;
 using Serilog;
-using Shuttle.Core.Contract;
+using Shuttle.Contract;
 
 namespace Shuttle.Recall.SqlServer.Storage.Database;
 

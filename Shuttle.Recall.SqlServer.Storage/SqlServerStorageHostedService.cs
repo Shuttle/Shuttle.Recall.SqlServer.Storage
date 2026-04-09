@@ -2,8 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
-using Shuttle.Core.Contract;
-using Shuttle.Core.Reflection;
+using Shuttle.Contract;
+using Shuttle.Reflection;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Shuttle.Recall.SqlServer.Storage;
