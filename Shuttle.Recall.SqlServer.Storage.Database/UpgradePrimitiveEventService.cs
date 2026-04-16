@@ -323,8 +323,6 @@ EXEC sp_releaseapplock @Resource = '{typeof(UpgradePrimitiveEventService).FullNa
             {
                 Event = envelope.Event,
                 AssemblyQualifiedName = envelope.AssemblyQualifiedName,
-                CompressionAlgorithm = envelope.CompressionAlgorithm,
-                EncryptionAlgorithm = envelope.EncryptionAlgorithm,
                 EventId = envelope.EventId,
                 EventType = envelope.EventType,
                 RecordedAt = envelope.EventDate,

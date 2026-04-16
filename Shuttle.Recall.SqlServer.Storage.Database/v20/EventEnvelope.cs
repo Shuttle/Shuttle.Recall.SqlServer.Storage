@@ -3,8 +3,7 @@
 public class EventEnvelope
 {
     public string AssemblyQualifiedName { get; set; } = string.Empty;
-    public string CompressionAlgorithm { get; set; } = string.Empty;
-    public string EncryptionAlgorithm { get; set; } = string.Empty;
+
     public byte[] Event { get; set; } = [];
     public DateTime EventDate { get; set; } = DateTime.UtcNow;
     public Guid EventId { get; set; } = Guid.NewGuid();
