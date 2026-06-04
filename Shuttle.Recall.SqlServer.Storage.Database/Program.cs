@@ -14,6 +14,7 @@ internal class Program
             .Add(new ArgumentDefinition("connection-string", "cs").WithDescription("The connection string to the database.").AsRequired())
             .Add(new ArgumentDefinition("schema", "s").WithDescription("The schema that contains the currentPrimitiveEvent table."))
             .Add(new ArgumentDefinition("from-sequence-number", "fsn").WithDescription("Sequence number to start reading from.  Defaults to 1."))
+            .Add(new ArgumentDefinition("upgrade", "u").WithDescription("Upgrade an existing database.  The default behaviour is to configure a new database."))
             .Add(new ArgumentDefinition("help", "h", "?"));
 
         if (args.Contains("help"))
@@ -74,11 +75,16 @@ internal class Program
 
         var serviceProvider = services.BuildServiceProvider();
 
-        var hostedService = serviceProvider.GetRequiredService<SqlServerStorageHostedService>();
+        if (args.Contains("upgrade"))
+        {
+            await new UpgradePrimitiveEventService(Log.ForContext<UpgradePrimitiveEventService>(), args.Get<string>("connection-string"), args.Get<string>("schema", "dbo"), args.Get<long>("from-sequence-number", 1))
+                .ExecuteAsync();
+        }
+        else
+        {
+            var hostedService = serviceProvider.GetRequiredService<SqlServerStorageHostedService>();
 
-        await hostedService.StartAsync(CancellationToken.None);
-
-        await new UpgradePrimitiveEventService(Log.ForContext<UpgradePrimitiveEventService>(), args.Get<string>("connection-string"), args.Get<string>("schema", "dbo"), args.Get<long>("from-sequence-number", 1))
-            .ExecuteAsync();
+            await hostedService.StartAsync(CancellationToken.None);
+        }
     }
 }
