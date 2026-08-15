@@ -13,16 +13,31 @@ dotnet add package Shuttle.Recall.SqlServer.Storage
 In order to use Sql Server for event storage you should use the `UseSqlServerEventStorage` extension:
 
 ```c#
-services.AddRecall(builder =>
-{
-    builder.UseSqlServerEventStorage(options =>
+services
+    .AddRecall()
+    .UseSqlServerEventStorage(options =>
     {
         options.ConnectionString = "connection-string";
     });
-});
 ```
 
-The options can also be configured via `appsettings.json`:
+`SqlServerStorageOptions` has the following properties:
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `ConnectionString` | `""` | Connection string to the database |
+| `Schema` | `"dbo"` | Schema containing the event storage tables |
+| `ConfigureDatabase` | `true` | Whether to automatically create/verify the required database structures on startup |
+| `CommandTimeout` | `00:00:30` | Command timeout used for the underlying EF Core operations |
+| `PrimitiveEventSequencerLimit` | `100` | Batch size used when sequencing newly-saved primitive events |
+
+These can be set directly as above, or bound from configuration yourself, e.g.:
+
+```c#
+services.Configure<SqlServerStorageOptions>(configuration.GetSection(SqlServerStorageOptions.SectionName));
+```
+
+`SqlServerStorageOptions.SectionName` is `"Shuttle:Recall:SqlServer:Storage"`, so the equivalent `appsettings.json` shape is:
 
 ```json
 {
@@ -31,7 +46,10 @@ The options can also be configured via `appsettings.json`:
       "SqlServer": {
         "Storage": {
           "ConnectionString": "connection-string",
-          "Schema": "dbo"
+          "Schema": "dbo",
+          "ConfigureDatabase": true,
+          "CommandTimeout": "00:00:30",
+          "PrimitiveEventSequencerLimit": 100
         }
       }
     }
@@ -39,9 +57,26 @@ The options can also be configured via `appsettings.json`:
 }
 ```
 
+> This package does not bind that section automatically — the `services.Configure<SqlServerStorageOptions>(...)` call above (or equivalent) is required for the JSON to take effect.
+
+`Shuttle.Recall.SqlServer.EventProcessing` reuses this package's connection (`SqlServerStorageOptions.ConnectionString`/`Schema`/`ConfigureDatabase`), so when both packages are used together, `UseSqlServerEventStorage` must be configured as well as `UseSqlServerEventProcessing`.
+
 ## Database
 
-By default, the `SqlServerStorageHostedService` will automatically create the required database structures if `ConfigureDatabase` is set to `true` (which is the default). If you prefer to manage the database structure manually, you can use the provided `Shuttle.Recall.SqlServer.Storage.Database` console application.
+By default, the `SqlServerStorageHostedService` will automatically create the required database structures (`EventType`, `IdKey`, `PrimitiveEvent`) if `ConfigureDatabase` is set to `true` (which is the default). It also detects an outdated schema from an older version of this package and will throw on startup, directing you to upgrade via the console application below.
+
+If you prefer to manage the database structure manually, or need to upgrade an existing database, you can use the provided `Shuttle.Recall.SqlServer.Storage.Database` console application:
+
+```bash
+Shuttle.Recall.SqlServer.Storage.Database --connection-string "connection-string" --schema "dbo"
+```
+
+| Argument | Alias | Description |
+|----------|-------|-------------|
+| `--connection-string` | `-cs` | Required. The connection string to the database. |
+| `--schema` | `-s` | The schema that contains the `PrimitiveEvent` table. Defaults to `dbo`. |
+| `--upgrade` | `-u` | Upgrade an existing (older-version) database instead of configuring a new one. |
+| `--from-sequence-number` | `-fsn` | Only relevant with `--upgrade`. Sequence number to start reading from. Defaults to `1`. |
 
 ## IIdKeyRepository
 
@@ -92,4 +127,3 @@ Task RekeyAsync(string key, string rekey, CancellationToken cancellationToken = 
 ```
 
 Changes `key` to a new key specified by `rekey`.
-
