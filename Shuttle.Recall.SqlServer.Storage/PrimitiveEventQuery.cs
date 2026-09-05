@@ -1,20 +1,20 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Data;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Options;
 using Shuttle.Contract;
-using System.Data;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
 public class PrimitiveEventQuery(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventQuery
 {
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
     private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
     private readonly IEventTypeRepository _eventTypeRepository = Guard.AgainstNull(eventTypeRepository);
+    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
 
-    public async Task<IEnumerable<PrimitiveEvent>> SearchAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<Query.PrimitiveEvent>> SearchAsync(Query.PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
         var eventTypeIds = new List<Guid>();
 
@@ -85,7 +85,7 @@ ORDER BY
             await connection.OpenAsync(cancellationToken);
         }
 
-        var result = new List<PrimitiveEvent>();
+        var result = new List<Query.PrimitiveEvent>();
 
         var currentTransaction = _dbContext.Database.CurrentTransaction;
 
@@ -114,7 +114,7 @@ ORDER BY
         return result;
     }
 
-    public async Task<long?> GetMaximumSequenceNumberAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
+    public async Task<long?> GetMaximumSequenceNumberAsync(Query.PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
         var connection = _dbContext.Database.GetDbConnection();
 

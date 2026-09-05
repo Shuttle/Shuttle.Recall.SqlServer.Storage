@@ -1,9 +1,9 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using System.Data;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Shuttle.Contract;
-using System.Data;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
@@ -54,23 +54,13 @@ ORDER BY
 
         while (await reader.ReadAsync(cancellationToken))
         {
-            result.Add(new()
-            {
-                Id = reader.GetGuid(0),
-                Version = reader.GetInt32(1),
-                EventId = reader.GetGuid(2),
-                EventEnvelope = (byte[])reader[3],
-                SequenceNumber = reader.IsDBNull(4) ? null : reader.GetInt64(4),
-                RecordedAt = reader.GetFieldValue<DateTimeOffset>(5),
-                CorrelationId = reader.IsDBNull(6) ? null : reader.GetGuid(6),
-                EventType = reader.GetString(7)
-            });
+            result.Add(new(reader.GetGuid(0), reader.GetGuid(2), reader.GetInt32(1), reader.GetString(7), (byte[])reader[3], reader.GetFieldValue<DateTimeOffset>(5), reader.IsDBNull(6) ? null : reader.GetGuid(6), reader.IsDBNull(4) ? null : reader.GetInt64(4)));
         }
 
         return result;
     }
 
-    public async Task RemoveAsync(PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
+    public async Task RemoveAsync(Query.PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
         var eventTypeIds = new List<Guid>();
 
