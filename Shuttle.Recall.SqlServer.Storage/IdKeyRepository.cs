@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Options;
 using Shuttle.Contract;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
@@ -7,15 +6,12 @@ using Microsoft.EntityFrameworkCore;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class IdKeyRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext) : IIdKeyRepository
+public class IdKeyRepository(ISqlServerStorageSchemaAccessor schemaAccessor, SqlServerStorageDbContext dbContext) : IIdKeyRepository
 {
-    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-
     public async Task AddAsync(Guid id, string key, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync(@$"
-INSERT INTO [{_sqlServerStorageOptions.Schema}].[IdKey]
+        await dbContext.Database.ExecuteSqlRawAsync(@$"
+INSERT INTO [{schemaAccessor.Schema}].[IdKey]
 (
     Id, 
     UniqueKey
@@ -35,24 +31,24 @@ VALUES
 
     public async ValueTask<bool> ContainsAsync(string key, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken) > 0;
+        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{schemaAccessor.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken) > 0;
     }
 
     public async ValueTask<bool> ContainsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE Id = @Id", new SqlParameter("@Id", id)).FirstOrDefaultAsync(cancellationToken) > 0;
+        return await dbContext.Database.SqlQueryRaw<int>($"SELECT COUNT(1) [Value] FROM [{schemaAccessor.Schema}].[IdKey] WHERE Id = @Id", new SqlParameter("@Id", id)).FirstOrDefaultAsync(cancellationToken) > 0;
     }
 
     public async ValueTask<Guid?> FindAsync(string key, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.Database.SqlQueryRaw<Guid?>($"SELECT Id [Value] FROM [{_sqlServerStorageOptions.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken);
+        return await dbContext.Database.SqlQueryRaw<Guid?>($"SELECT Id [Value] FROM [{schemaAccessor.Schema}].[IdKey] WHERE UniqueKey = @Key", new SqlParameter("@Key", key)).FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task RekeyAsync(string key, string rekey, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync(@$"
+        await dbContext.Database.ExecuteSqlRawAsync(@$"
 UPDATE 
-    [{_sqlServerStorageOptions.Schema}].[IdKey] 
+    [{schemaAccessor.Schema}].[IdKey] 
 SET 
     UniqueKey = @NewKey 
 WHERE 
@@ -66,9 +62,9 @@ WHERE
 
     public async Task RemoveAsync(string key, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync(@$"
+        await dbContext.Database.ExecuteSqlRawAsync(@$"
 DELETE FROM 
-    [{_sqlServerStorageOptions.Schema}].[IdKey] 
+    [{schemaAccessor.Schema}].[IdKey] 
 WHERE 
     UniqueKey = @UniqueKey;",
             [
@@ -79,9 +75,9 @@ WHERE
 
     public async Task RemoveAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        await _dbContext.Database.ExecuteSqlRawAsync(@$"
+        await dbContext.Database.ExecuteSqlRawAsync(@$"
 DELETE FROM 
-    [{_sqlServerStorageOptions.Schema}].[IdKey] 
+    [{schemaAccessor.Schema}].[IdKey] 
 WHERE 
     Id = @Id;",
             [

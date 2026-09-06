@@ -7,19 +7,15 @@ using System.Diagnostics.CodeAnalysis;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class PrimitiveEventSequencer(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext) : IPrimitiveEventSequencer
+public class PrimitiveEventSequencer(IOptions<RecallOptions> recallOptions, IOptions<SqlServerStorageOptions> sqlServerStorageOptions, ISqlServerStorageSchemaAccessor schemaAccessor, SqlServerStorageDbContext dbContext) : IPrimitiveEventSequencer
 {
-    private readonly RecallOptions _recallOptions = Guard.AgainstNull(Guard.AgainstNull(recallOptions).Value);
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
-
     public async ValueTask<bool> SequenceAsync(CancellationToken cancellationToken = default)
     {
-        await _recallOptions.Operation.InvokeAsync(new("[PrimitiveEventSequencer/Starting]"), cancellationToken);
+        await recallOptions.Value.Operation.InvokeAsync(new("[PrimitiveEventSequencer/Starting]"), cancellationToken);
 
-        await using var transaction = await _dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
-        var rowsAffected = await _dbContext.Database.ExecuteSqlRawAsync($@"
+        var rowsAffected = await dbContext.Database.ExecuteSqlRawAsync($@"
 DECLARE @lock_result INT;
 DECLARE @MaxSequenceNumber BIGINT;
 DECLARE @RowsAffected INT = 0;
@@ -33,16 +29,16 @@ BEGIN TRY
     SELECT 
         @MaxSequenceNumber = ISNULL(MAX(SequenceNumber), 0)
     FROM 
-        [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent];
+        [{schemaAccessor.Schema}].[PrimitiveEvent];
 
     ;WITH Batch AS
     (
-        SELECT TOP ({_sqlServerStorageOptions.PrimitiveEventSequencerLimit})
+        SELECT TOP ({sqlServerStorageOptions.Value.PrimitiveEventSequencerLimit})
             [Id],
             [Version],
             ROW_NUMBER() OVER (ORDER BY [RecordedAt], [Version]) AS rn
         FROM 
-            [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] WITH (UPDLOCK, ROWLOCK)
+            [{schemaAccessor.Schema}].[PrimitiveEvent] WITH (UPDLOCK, ROWLOCK)
         WHERE 
             [SequenceNumber] IS NULL
         ORDER BY 
@@ -53,7 +49,7 @@ BEGIN TRY
     SET 
         [SequenceNumber] = @MaxSequenceNumber + b.rn
     FROM 
-        [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] pe
+        [{schemaAccessor.Schema}].[PrimitiveEvent] pe
     INNER JOIN 
         Batch b ON b.Id = pe.Id AND b.Version = pe.Version;
 
@@ -71,7 +67,7 @@ SELECT @RowsAffected;
 
         await transaction.CommitAsync(cancellationToken);
 
-        await _recallOptions.Operation.InvokeAsync(new($"[PrimitiveEventSequencer/Completed] : rows affected = {rowsAffected}"), cancellationToken);
+        await recallOptions.Value.Operation.InvokeAsync(new($"[PrimitiveEventSequencer/Completed] : rows affected = {rowsAffected}"), cancellationToken);
 
         return rowsAffected > 0;
     }

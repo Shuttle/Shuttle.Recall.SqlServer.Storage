@@ -2,22 +2,16 @@
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Shuttle.Contract;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class PrimitiveEventRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
+public class PrimitiveEventRepository(ISqlServerStorageSchemaAccessor schemaAccessor, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventRepository
 {
-    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
-    private readonly IEventTypeRepository _eventTypeRepository = Guard.AgainstNull(eventTypeRepository);
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-
     public async Task<IEnumerable<PrimitiveEvent>> GetAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
+        var connection = dbContext.Database.GetDbConnection();
 
         await using var command = connection.CreateCommand();
 
@@ -32,9 +26,9 @@ SELECT
     pe.CorrelationId, 
     et.TypeName
 FROM 
-    [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] pe
+    [{schemaAccessor.Schema}].[PrimitiveEvent] pe
 INNER JOIN 
-    [{_sqlServerStorageOptions.Schema}].[EventType] et ON pe.EventTypeId = et.Id
+    [{schemaAccessor.Schema}].[EventType] et ON pe.EventTypeId = et.Id
 WHERE 
     pe.Id = @Id
 ORDER BY 
@@ -66,13 +60,13 @@ ORDER BY
 
         foreach (var eventType in specification.EventTypes)
         {
-            eventTypeIds.Add(await _eventTypeRepository.GetIdAsync(eventType, cancellationToken));
+            eventTypeIds.Add(await eventTypeRepository.GetIdAsync(eventType, cancellationToken));
         }
 
-        await _dbContext.Database.ExecuteSqlRawAsync(@$"
-DELETE FROM [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]
+        await dbContext.Database.ExecuteSqlRawAsync(@$"
+DELETE FROM [{schemaAccessor.Schema}].[PrimitiveEvent]
 FROM 
-	[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] es
+	[{schemaAccessor.Schema}].[PrimitiveEvent] es
 WHERE 
 (
     @SequenceNumberStart = 0
@@ -118,10 +112,10 @@ AND
     {
         foreach (var primitiveEvent in primitiveEvents)
         {
-            var eventTypeId = await _eventTypeRepository.GetIdAsync(primitiveEvent.EventType, cancellationToken).ConfigureAwait(false);
+            var eventTypeId = await eventTypeRepository.GetIdAsync(primitiveEvent.EventType, cancellationToken).ConfigureAwait(false);
 
-            await _dbContext.Database.ExecuteSqlRawAsync(@$"
-INSERT INTO [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] 
+            await dbContext.Database.ExecuteSqlRawAsync(@$"
+INSERT INTO [{schemaAccessor.Schema}].[PrimitiveEvent] 
 (
     Id, 
     Version, 

@@ -2,28 +2,22 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.Extensions.Options;
-using Shuttle.Contract;
 
 namespace Shuttle.Recall.SqlServer.Storage;
 
-public class PrimitiveEventQuery(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
+public class PrimitiveEventQuery(ISqlServerStorageSchemaAccessor schemaAccessor, SqlServerStorageDbContext dbContext, IEventTypeRepository eventTypeRepository)
     : IPrimitiveEventQuery
 {
-    private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
-    private readonly IEventTypeRepository _eventTypeRepository = Guard.AgainstNull(eventTypeRepository);
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
-
     public async Task<IEnumerable<Query.PrimitiveEvent>> SearchAsync(Query.PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
         var eventTypeIds = new List<Guid>();
 
         foreach (var eventType in specification.EventTypes)
         {
-            eventTypeIds.Add(await _eventTypeRepository.GetIdAsync(eventType, cancellationToken));
+            eventTypeIds.Add(await eventTypeRepository.GetIdAsync(eventType, cancellationToken));
         }
 
-        var connection = _dbContext.Database.GetDbConnection();
+        var connection = dbContext.Database.GetDbConnection();
 
         await using var command = connection.CreateCommand();
 
@@ -38,9 +32,9 @@ SELECT {(specification.MaximumRows > 0 ? $"TOP {specification.MaximumRows}" : st
 	es.[CorrelationId],
 	et.[TypeName] EventType
 FROM 
-	[{_sqlServerStorageOptions.Schema}].[PrimitiveEvent] es
+	[{schemaAccessor.Schema}].[PrimitiveEvent] es
 INNER JOIN
-	[{_sqlServerStorageOptions.Schema}].[EventType] et ON et.Id = es.EventTypeId
+	[{schemaAccessor.Schema}].[EventType] et ON et.Id = es.EventTypeId
 WHERE 
 (
     @SequenceNumberStart = 0
@@ -87,7 +81,7 @@ ORDER BY
 
         var result = new List<Query.PrimitiveEvent>();
 
-        var currentTransaction = _dbContext.Database.CurrentTransaction;
+        var currentTransaction = dbContext.Database.CurrentTransaction;
 
         if (currentTransaction != null)
         {
@@ -116,7 +110,7 @@ ORDER BY
 
     public async Task<long?> GetMaximumSequenceNumberAsync(Query.PrimitiveEvent.Specification specification, CancellationToken cancellationToken = default)
     {
-        var connection = _dbContext.Database.GetDbConnection();
+        var connection = dbContext.Database.GetDbConnection();
 
         await using var command = connection.CreateCommand();
 
@@ -126,7 +120,7 @@ IF EXISTS
     SELECT 
         NULL
     FROM 
-        [{_sqlServerStorageOptions.Schema}].[PrimitiveEvent]
+        [{schemaAccessor.Schema}].[PrimitiveEvent]
     WHERE 
         SequenceNumber IS NULL
 )

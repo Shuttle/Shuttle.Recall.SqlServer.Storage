@@ -20,6 +20,7 @@ public static class RecallBuilderExtensions
             });
 
             services.AddSingleton<IValidateOptions<SqlServerStorageOptions>, SqlServerStorageOptionsValidator>();
+            services.AddScoped<ISqlServerStorageSchemaAccessor, SqlServerStorageSchemaAccessor>();
             services.AddScoped<IPrimitiveEventQuery, PrimitiveEventQuery>();
             services.AddScoped<IPrimitiveEventRepository, PrimitiveEventRepository>();
             services.AddScoped<IEventTypeRepository, EventTypeRepository>();

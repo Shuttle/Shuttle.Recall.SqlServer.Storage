@@ -1,5 +1,4 @@
 ﻿using Microsoft.Data.SqlClient;
-using Microsoft.Extensions.Options;
 using Shuttle.Contract;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.EntityFrameworkCore;
@@ -7,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 namespace Shuttle.Recall.SqlServer.Storage;
 
 [SuppressMessage("Security", "EF1002:Risk of vulnerability to SQL injection", Justification = "Schema and table names are from trusted configuration sources")]
-public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStorageOptions, SqlServerStorageDbContext dbContext) : IEventTypeRepository
+public class EventTypeRepository(ISqlServerStorageSchemaAccessor schemaAccessor, SqlServerStorageDbContext dbContext) : IEventTypeRepository
 {
-    private readonly SqlServerStorageOptions _sqlServerStorageOptions = Guard.AgainstNull(Guard.AgainstNull(sqlServerStorageOptions).Value);
+    private readonly ISqlServerStorageSchemaAccessor _schemaAccessor = Guard.AgainstNull(schemaAccessor);
     private readonly SqlServerStorageDbContext _dbContext = Guard.AgainstNull(dbContext);
     private readonly Dictionary<string, Guid> _cache = new();
     private readonly SemaphoreSlim _lock = new(1, 1);
@@ -31,9 +30,9 @@ public class EventTypeRepository(IOptions<SqlServerStorageOptions> sqlServerStor
                 await using var command = connection.CreateCommand();
 
                 command.CommandText = @$"
-IF NOT EXISTS (SELECT 1 FROM [{_sqlServerStorageOptions.Schema}].[EventType] WHERE TypeName = @TypeName)
+IF NOT EXISTS (SELECT 1 FROM [{_schemaAccessor.Schema}].[EventType] WHERE TypeName = @TypeName)
 BEGIN
-    INSERT INTO [{_sqlServerStorageOptions.Schema}].[EventType] 
+    INSERT INTO [{_schemaAccessor.Schema}].[EventType] 
     (
         Id, 
         TypeName
@@ -44,7 +43,7 @@ BEGIN
         @TypeName
     );
 END
-SELECT Id FROM [{_sqlServerStorageOptions.Schema}].[EventType] WHERE TypeName = @TypeName;
+SELECT Id FROM [{_schemaAccessor.Schema}].[EventType] WHERE TypeName = @TypeName;
 ";
 
                 command.Parameters.Add(new SqlParameter("@TypeName", typeName));
