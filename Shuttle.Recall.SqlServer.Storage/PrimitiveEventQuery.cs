@@ -132,7 +132,7 @@ BEGIN
     SELECT TOP (1) 
         SequenceNumber AS MaxSequenceNumber
     FROM 
-        [access].[PrimitiveEvent]
+        [{schemaAccessor.Schema}].[PrimitiveEvent]
     WHERE 
         SequenceNumber IS NOT NULL
     ORDER BY 

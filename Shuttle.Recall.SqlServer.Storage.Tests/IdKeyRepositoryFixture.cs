@@ -47,7 +47,7 @@ public class IdKeyRepositoryFixture
 
         await repository.AddAsync(Id, keyA);
 
-        var ex = Assert.ThrowsAsync<SqlException>(async () => await repository.AddAsync(Id, keyA));
+        var ex = await Assert.ThrowsAsync<SqlException>(async () => await repository.AddAsync(Id, keyA));
 
         Assert.That(ex, Is.Not.Null);
         Assert.That(ex!.Message, Does.Contain("Violation of PRIMARY KEY constraint"));
@@ -86,7 +86,7 @@ public class IdKeyRepositoryFixture
         Assert.That(await repository.ContainsAsync(keyA), Is.True, $"Should contain key A / key = '{keyA}'");
         Assert.That(await repository.ContainsAsync(keyB), Is.True, $"Should contain key B / key = '{keyB}'");
 
-        ex = Assert.ThrowsAsync<SqlException>(async () => await repository.RekeyAsync(keyA, keyB));
+        ex = await Assert.ThrowsAsync<SqlException>(async () => await repository.RekeyAsync(keyA, keyB));
 
         Assert.That(ex, Is.Not.Null);
         Assert.That(ex!.Message, Does.Contain("Violation of PRIMARY KEY constraint"));
